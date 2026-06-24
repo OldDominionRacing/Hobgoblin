@@ -14,14 +14,32 @@ seam to escalate to an LLM only when confidence is low.
 
 ## Status
 
-🚧 Early design. No installable package yet. See [`DESIGN.md`](DESIGN.md) for the full
-design of the first primitive, `hobgoblin.extract()` (spaCy-based entity & context
-extraction).
+v1 of the first primitive, `hobgoblin.extract()`, works. See [`DESIGN.md`](DESIGN.md)
+for the full spec and output schema.
+
+## Install
+
+```bash
+pip install -e .
+python -m spacy download en_core_web_sm
+```
+
+## Usage
+
+```python
+from hobgoblin import extract
+
+ents = extract("Last Tuesday, John bought three boxes of red apples.",
+               anchors=["apple"])
+# -> list of entity dicts: head, char span, POS pattern, governing verb,
+#    count (three boxes of), dates, modifiers, anchors_matched, ...
+```
 
 ## Roadmap
 
-- [ ] `hobgoblin.extract()` — entity + context extraction (spaCy POS/dependency)
+- [x] `hobgoblin.extract()` — entity + context extraction (spaCy POS/dependency)
 - [ ] Wizard escalation — LLM fallback when the goblin's confidence is low
+- [ ] TypeScript port (`compromise` / `wink-nlp`; shared JSON schema)
 - [ ] More primitives: `ocr()`, `classify()`, …
 
 ## License

@@ -145,6 +145,21 @@ Input: `"Last Tuesday, John bought three boxes of red apples."`
 
 ---
 
+## TypeScript parity (planned)
+
+spaCy is Python-only, but the design ports to TS. The output schema above is plain
+JSON and is meant to be **language-agnostic** — the same shape across both ports.
+
+- **`compromise`** — match syntax *is* POS patterns (`doc.match('#Adjective+ #Noun')`);
+  `compromise-dates` / `compromise-numbers` plugins cover dates and counts.
+- **`wink-nlp`** (+ `wink-eng-lite-web-model`) — more spaCy-like: POS, lemmas, NER.
+
+**Caveat:** neither JS lib has a true dependency parser, so the **governing verb** would
+be approximated heuristically (nearest preceding verb / sentence root) rather than
+resolved through a dep tree. Everything else ports cleanly.
+
+---
+
 ## Deferred / future
 
 - **Wizard escalation:** LLM fallback when POS/dep patterns are ambiguous or low
@@ -157,5 +172,5 @@ Input: `"Last Tuesday, John bought three boxes of red apples."`
 
 ## Status
 
-Design only. No code, no repo yet. Target home: public repo
-`OldDominionRacing/Hobgoblin`.
+v1 of `extract()` implemented and tested (Python, spaCy `en_core_web_sm`). Repo:
+public `OldDominionRacing/Hobgoblin`.
