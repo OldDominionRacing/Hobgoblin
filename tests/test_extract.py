@@ -101,6 +101,38 @@ def test_multiplier_shorthand_counts(text):
     assert count["form"] == "multiplier"
 
 
+@pytest.mark.parametrize("text,lo,hi", [
+    ("3-5 cars", 3, 5),
+    ("3 to 5 cars", 3, 5),
+    ("between 3 and 5 cars", 3, 5),
+])
+def test_range_counts(text, lo, hi):
+    ents = extract(text, items=False, military=False)
+    count = _by_head(ents, "cars")["context"]["count"]
+    assert count["range"] == [lo, hi]
+
+
+@pytest.mark.parametrize("text,qual", [
+    ("about three cars", "about"),
+    ("approximately 3 cars", "approximately"),
+    ("~3 cars", "~"),
+    ("more than 5 cars", "more than"),
+    ("over 100 cars", "over"),
+    ("at least 10 cars", "at least"),
+])
+def test_approximator_counts(text, qual):
+    ents = extract(text, items=False, military=False)
+    count = _by_head(ents, "cars")["context"]["count"]
+    assert count["approx"] is True
+    assert count["qualifier"] == qual
+
+
+def test_plain_count_has_no_range_or_approx():
+    count = _by_head(extract("She has three cars.", items=False), "cars")["context"]["count"]
+    assert "range" not in count
+    assert "approx" not in count
+
+
 def test_anchors_flag_mode_marks_all():
     ents = extract(SENT, anchors=["apple"])
     apples = _by_head(ents, "apples")

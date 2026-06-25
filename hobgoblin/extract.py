@@ -38,6 +38,16 @@ _QUANTITY_WORDS = {
 
 # Multiplier shorthand: "3x cars", "3X", "3× cars", or suffix "cars x3".
 _MULT_RE = re.compile(r"^(?:(\d[\d,]*)\s*[xX×]|[xX×](\d[\d,]*))$")
+# Symbolic approximator on a number: "~3", "≈3", ">5", "<=10".
+_APPROX_NUM_RE = re.compile(r"^(>=|<=|[~≈<>])\s*(\d[\d,]*(?:\.\d+)?)$")
+# Inline numeric range in a single token: "3-5", "3–5".
+_RANGE_RE = re.compile(r"^(\d[\d,]*(?:\.\d+)?)\s*[-–—]\s*(\d[\d,]*(?:\.\d+)?)$")
+# Words that qualify a count as approximate ("about 3", "over 100", "at least 10").
+_APPROX_WORDS = {
+    "about", "approximately", "around", "roughly", "nearly", "almost", "circa",
+    "approx", "over", "under", "above", "below", "least", "most", "more",
+    "less", "fewer", "upwards",
+}
 
 
 def _multiplier_value(text: str) -> Optional[float]:
@@ -46,6 +56,39 @@ def _multiplier_value(text: str) -> Optional[float]:
     if not m:
         return None
     return _to_value(m.group(1) or m.group(2))
+
+
+def _detect_range(head, num):
+    """Return ``[lo, hi]`` if ``num`` is part of a numeric range, else None."""
+    # single-token range, e.g. "3-5"
+    m = _RANGE_RE.match(num.text)
+    if m:
+        lo, hi = _to_value(m.group(1)), _to_value(m.group(2))
+        if lo is not None and hi is not None:
+            return [min(lo, hi), max(lo, hi)]
+    # two numeric nummods on the head, e.g. "3 - 5 cars"
+    vals = [
+        _to_value(c.text) for c in head.children
+        if c.dep_ == "nummod" and not _is_temporal(c) and _to_value(c.text) is not None
+    ]
+    if len(vals) >= 2:
+        return [min(vals), max(vals)]
+    # secondary number hanging off num as quantmod/conj, e.g. "3 to 5", "between 3 and 5"
+    for c in num.children:
+        if c.dep_ in ("quantmod", "conj", "nummod") and _to_value(c.text) is not None:
+            a, b = _to_value(num.text), _to_value(c.text)
+            return [min(a, b), max(a, b)]
+    return None
+
+
+def _detect_approx(num):
+    """Return the qualifier text if ``num`` is approximate, else None."""
+    quals = [c for c in num.children if c.lemma_.lower() in _APPROX_WORDS]
+    if not quals:
+        return None
+    left = min(quals, key=lambda t: t.idx)
+    text = num.doc.text[left.left_edge.idx:num.idx].strip()
+    return text or left.text
 
 
 def _span(token) -> list[int]:
@@ -131,14 +174,36 @@ def _find_count(head) -> Optional[dict]:
                 "form": "multiplier",
             }
 
+    # 2b. symbolic approximator number ("~3 cars", ">5 cars") — not a nummod.
+    for child in head.children:
+        if _is_temporal(child):
+            continue
+        m = _APPROX_NUM_RE.match(child.text)
+        if m:
+            return {
+                "text": child.text,
+                "value": _to_value(m.group(2)),
+                "span": _span(child),
+                "approx": True,
+                "qualifier": m.group(1),
+            }
+
     # 3. bare numeric modifier on the head (skip years/dates, e.g. "1903 Prize").
     for child in head.children:
         if child.dep_ == "nummod" and not _is_temporal(child):
-            return {
+            count = {
                 "text": child.text,
                 "value": _to_value(child.text),
                 "span": _span(child),
             }
+            rng = _detect_range(head, child)
+            if rng:
+                count["range"] = rng
+            qualifier = _detect_approx(child)
+            if qualifier:
+                count["approx"] = True
+                count["qualifier"] = qualifier
+            return count
 
     # 4. quantity word.
     for child in head.children:

@@ -64,14 +64,19 @@ For each entity, collect its sentence's **elements**, each with `[start_char, en
 - **count + helper** — broad matching, in priority order:
   1. **measure/container**: "three **boxes of** apples" (only when a numeral is
      present — a bare `of`-phrase like "division of the Army" is *not* a count).
-  2. **multiplier shorthand**: "**3x** cars", "**3X** cars", "**3×** cars" → value 3.
+  2. **multiplier shorthand**: "**3x** cars", "**3X** cars", "**3×** cars" → value 3,
+     `form: "multiplier"`.
   3. **bare numeric**: "three apples", "12 boxes".
   4. **quantity words**: "a **dozen**", "**several**", "a **lot of**".
+  Enrichment on the numeric forms:
+  - **range** → `range: [lo, hi]` for "3-5 cars", "3 to 5 cars", "between 3 and 5".
+  - **approximate** → `approx: true, qualifier: "..."` for "about 3", "~3", ">5",
+    "more than 5", "over 100", "at least 10".
   - A numeral that is part of a `DATE`/`TIME` span is a **year, not a count**
     ("the 1903 Nobel Prize" → no count).
-  - *Known gaps:* ranges ("3–5 cars"), approximators ("~3", "about 3"), and the
-    suffix multiplier ("cars x3", which spaCy splits inconsistently) are not yet
-    handled.
+  - *Known gaps:* "million/billion" scaling ("3.5 million"), distributive counts
+    ("two cars each"), and the suffix multiplier ("cars x3", which spaCy splits
+    inconsistently) are not yet handled.
 - **dates** — from spaCy's built-in NER `DATE` / `TIME` labels.
 - **modifiers** — the adjectives/compounds decorating the head.
 - **annotations** — per-token `lemma`, `pos`, `dep`.
