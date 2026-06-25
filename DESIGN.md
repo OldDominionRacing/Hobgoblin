@@ -320,12 +320,38 @@ resolved through a dep tree. Everything else ports cleanly.
 
 ---
 
+## The wizard (LLM escalation)
+
+The goblin is cheap and deterministic; the **wizard** (`wizard.py`) is the optional
+LLM pass that runs *over the goblin's structured draft*, not over raw text — so the
+model does one narrow job and the call stays small. That's the whole goblin-first
+payoff: pay tokens only for the residue the goblin can't resolve.
+
+Two jobs:
+- **`wizard.suggest_anchors(text, anchors=...)`** — reads the document + current
+  anchors + the goblin's *untyped* entities, and proposes additional anchor
+  terms/categories. The analyst accepts them into their pack, so the goblin gets
+  better per-corpus with no model at runtime.
+- **`wizard.fix(text)`** — reviews the draft and returns a list of corrections
+  (drop junk like a mis-parsed `"I"`, merge a split `World War I`, retype, add a
+  missed entity).
+
+Two ways to wire the model, both supported:
+- **Bring your own:** `llm=callable(prompt: str) -> str` (any model/SDK). This is
+  also how an agent that already knows Hobgoblin would use it — run `extract` cheap,
+  then hand these prompts to whatever model it's already driving.
+- **Anthropic default:** `pip install hobgoblin[llm]` + `ANTHROPIC_API_KEY`; with no
+  `llm` we call Claude (`claude-opus-4-8`).
+
+Every prompt is **inspectable before you spend a token**: call `build_anchor_prompt`
+/ `build_fix_prompt`, or pass `dry_run=True` to get the exact prompt back instead of
+calling the model.
+
 ## Deferred / future
 
-- **Wizard escalation:** LLM fallback when POS/dep patterns are ambiguous or low
-  confidence — the "option 4" fallback seam that makes the goblin trustworthy.
 - **More primitives:** `hobgoblin.ocr()`, `hobgoblin.classify()`, etc.
-- **Confidence scoring** on each entity to drive escalation decisions.
+- **Confidence scoring** on each entity to drive automatic escalation.
+- **Apply-corrections** helper to fold `fix()` output back into the entity list.
 - **Non-English models.**
 
 ---

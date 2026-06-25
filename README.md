@@ -73,7 +73,10 @@ the actual URL on startup).
 - [x] Smart anchors: fuzzy typo matching (`brigdae`→brigade), abbreviation
       aliases (`BDE`), categorized output (unit/facility/equipment/place),
       rule-based `NAME` + `PLACE` detectors, and a built-in `ANCHORS` pack
-- [ ] Wizard escalation — LLM fallback when the goblin's confidence is low
+- [x] Wizard escalation — optional LLM pass over the goblin's draft:
+      `wizard.suggest_anchors()` (propose anchors for your corpus) and
+      `wizard.fix()` (correct the draft); bring-your-own LLM or Anthropic default,
+      inspectable prompts
 - [ ] TypeScript port (`compromise` / `wink-nlp`; shared JSON schema)
 - [ ] More primitives: `ocr()`, `classify()`, …
 
