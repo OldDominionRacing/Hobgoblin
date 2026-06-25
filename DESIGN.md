@@ -152,9 +152,19 @@ money, street address — and scores how strongly each relates to every entity, 
 deterministically.
 
 ### Detection (deterministic)
-- **phone / email / URL / money** — regex + spaCy token alignment.
-- **address** — regex to find the span, then `usaddress` (a CRF tagger) to validate
-  and parse components. If `usaddress` is absent, regex-only with no `components`.
+
+Types: `email`, `url`, `uuid`, `mac`, `ipv6`, `ipv4`, `coordinate`, `date`,
+`credit_card`, `ssn`, `phone`, `address`, `money`, `percent`, `time`, `handle`,
+`hashtag`, `file_path`, `zip`.
+
+- **regex + spaCy token alignment** for most types, matched in **priority order**
+  (precise patterns first) with a claimed-range pass so they don't overlap.
+- **validators** keep false positives down: **Luhn checksum** for `credit_card`,
+  **octet range** for `ipv4`.
+- **address** — regex finds the span, then `usaddress` (a CRF tagger) validates and
+  parses `components`. If `usaddress` is absent, regex-only with no `components`.
+- **spaCy NER pass** adds `date` / `time` / `percent` that the regex didn't claim,
+  guarded so bare digit-runs NER sometimes mislabels as dates are rejected.
 - An entity whose **head token** sits inside an item is dropped — it *is* the item,
   not a separate entity (e.g. a noun-chunk over an email or a street name).
 

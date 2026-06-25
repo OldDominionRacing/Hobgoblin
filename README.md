@@ -44,6 +44,9 @@ items = item_index(ents)   # item-centric view: each item -> best_entity + ranke
 
 - [x] `hobgoblin.extract()` — entity + context extraction (spaCy POS/dependency)
 - [x] Items of interest + relatedness scoring (blended token/dependency distance)
+- [x] Expanded item types: email, url, uuid, mac, ip, coordinate, date, time,
+      credit_card (Luhn), ssn, phone, address, money, percent, handle, hashtag,
+      file_path, zip
 - [ ] Wizard escalation — LLM fallback when the goblin's confidence is low
 - [ ] TypeScript port (`compromise` / `wink-nlp`; shared JSON schema)
 - [ ] More primitives: `ocr()`, `classify()`, …
