@@ -75,6 +75,14 @@ def test_extract_annotates_entities():
     assert any(m and m["echelon"] == "Corps" for m in annotated.values())
 
 
+def test_entity_grows_to_cover_designation():
+    # spaCy chunks "Airborne Corps"; the entity should grow to include "XVIII"
+    ents = extract("XVIII Airborne Corps will deploy.", items=False)
+    unit = next(e for e in ents if e["mil_unit"])
+    assert unit["entity"] == "XVIII Airborne Corps"
+    assert unit["span"][0] == 0
+
+
 def test_military_can_be_disabled():
     ents = extract("The 1st Infantry Division deployed.", military=False)
     assert all(e["mil_unit"] is None for e in ents)

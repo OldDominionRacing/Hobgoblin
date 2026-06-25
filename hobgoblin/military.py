@@ -155,7 +155,8 @@ def annotate(doc, entities: list[dict], echelons=None, text=None) -> None:
     ``text`` overrides ``doc.text`` for detection (offsets must align) so units are
     recognized on the original casing even when the doc was lowercased for tagging.
     """
-    units = detect_units(text if text is not None else doc.text, echelons=echelons)
+    src = text if text is not None else doc.text
+    units = detect_units(src, echelons=echelons)
     if not units:
         return
     for ent in entities:
@@ -167,4 +168,17 @@ def annotate(doc, entities: list[dict], echelons=None, text=None) -> None:
                     ("echelon", "branch", "designation",
                      "designation_text", "designation_form")
                 }
+                # Grow the entity to cover the full designation (e.g. include the
+                # "XVIII" that spaCy's noun chunk left out of "Airborne Corps").
+                ns = min(ent["span"][0], u["span"][0])
+                ne = max(ent["span"][1], u["span"][1])
+                if [ns, ne] != ent["span"]:
+                    ent["span"] = [ns, ne]
+                    ent["entity"] = src[ns:ne]
+                    ent["tokens"] = [
+                        {"text": src[t.idx:t.idx + len(t.text)], "pos": t.pos_,
+                         "dep": t.dep_, "lemma": t.lemma_,
+                         "span": [t.idx, t.idx + len(t.text)]}
+                        for t in doc if ns <= t.idx < ne
+                    ]
                 break
