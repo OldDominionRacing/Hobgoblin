@@ -235,9 +235,10 @@ def _pattern_label(chunk) -> str:
 
 def extract(
     text: str,
-    anchors: Optional[Iterable[str]] = None,
+    anchors=None,
     *,
     anchor_mode: str = "flag",
+    fuzzy: bool = True,
     items: bool = True,
     min_weight: float = 0.1,
     military: bool = True,
@@ -286,6 +287,8 @@ def extract(
             {
                 "entity": chunk.text,
                 "head": head.text,
+                "head_pos": head.pos_,
+                "head_ent": head.ent_type_,
                 "span": [chunk.start_char, chunk.end_char],
                 "pattern": _pattern_label(chunk),
                 "tokens": [
@@ -323,7 +326,7 @@ def extract(
         del ent["_tok_start"], ent["_tok_end"], ent["_root_i"]
 
     if anchors is not None:
-        entities = apply_anchors(entities, anchors, mode=anchor_mode, model=model)
+        entities = apply_anchors(entities, anchors, mode=anchor_mode, fuzzy=fuzzy)
 
     return entities
 

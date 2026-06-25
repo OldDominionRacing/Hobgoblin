@@ -83,8 +83,30 @@ For each entity, collect its sentence's **elements**, each with `[start_char, en
 
 ### Part 2 — anchors
 
-A second function lets the user feed in **anchor words** — the entities they care about.
+A second function lets the user feed in **anchors** — the entities they care about.
+Anchors come in two shapes:
 
+- **flat list** `["brigade", "tank"]` → `anchors_matched` reports matched *terms*.
+- **categorized dict** `{"unit": ["brigade", "BDE"], "name": NAME}` → `anchors_matched`
+  reports matched *category labels*, turning the POS finder into a typed extractor.
+
+**Matching is fuzzy-or-exact** (`match.py`, Optimal String Alignment distance):
+- spelled-out words match **fuzzily**, so typos are caught without enumerating them
+  (`brigdae` → brigade at edit distance 1). On by default, conservatively
+  (length-scaled budget: 0 for ≤3 chars, 1 for 4–6, 2 for 7–9, 3 for 10+).
+- **abbreviations** (ALL-CAPS terms like `BDE`, `BAT`) and very short terms match
+  **exactly only** — fuzzy-matching `BAT` would collide with `bad`/`cat`/`bot`.
+- disable entirely with `fuzzy=False`.
+
+**Names** can't be enumerated (too many spellings), so the `NAME` sentinel matches by
+*rule* instead of a word list: an entity is a name if its head is a spaCy `PERSON`, or
+the chunk contains an **honorific** (Colonel/Dr/Sgt/…). Title-case alone is *not* used
+— it flags places and capitalized units.
+
+A ready-made **`MILITARY_ANCHORS`** pack (unit/facility/equipment/name, with echelons,
+abbreviations, and common misspellings) ships in `packs.py`.
+
+Earlier flat-list behavior (single match rule):
 - **Match rule:** **lemma, case-insensitive** (`apple` matches `apples`, `Apple`).
 - **Multiple anchors:** OR logic; `anchors_matched` reports *which* anchors hit.
 - **Mode:** `anchor_mode=` — `"flag"` (default; return all entities, tag matches) or

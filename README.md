@@ -49,6 +49,9 @@ items = item_index(ents)   # item-centric view: each item -> best_entity + ranke
       file_path, zip
 - [x] Military unit recognizer (`detect_units`): cardinal/Roman/ordinal/letter
       designations (`3 Corps`, `I Corps`, `1st Infantry Division`, `C Company`)
+- [x] Smart anchors: fuzzy typo matching (`brigdae`→brigade), abbreviation
+      aliases (`BDE`), categorized output (unit/facility/equipment), rule-based
+      `NAME` detector, and a built-in `MILITARY_ANCHORS` pack
 - [ ] Wizard escalation — LLM fallback when the goblin's confidence is low
 - [ ] TypeScript port (`compromise` / `wink-nlp`; shared JSON schema)
 - [ ] More primitives: `ocr()`, `classify()`, …
