@@ -40,6 +40,11 @@ def _span(token) -> list[int]:
     return [token.idx, token.idx + len(token.text)]
 
 
+def _is_temporal(token) -> bool:
+    """True if the token is part of a DATE/TIME entity (a year is not a count)."""
+    return token.ent_type_ in ("DATE", "TIME")
+
+
 def _to_value(text: str) -> Optional[float]:
     """Best-effort numeric value for a count token."""
     cleaned = text.replace(",", "").strip()
@@ -91,16 +96,16 @@ def _find_count(head) -> Optional[dict]:
             "helper": {"text": helper.text, "span": _span(helper)},
         }
         for child in measure.children:
-            if child.dep_ == "nummod":
+            if child.dep_ == "nummod" and not _is_temporal(child):
                 count.update(
                     text=child.text, value=_to_value(child.text), span=_span(child)
                 )
                 break
         return count
 
-    # 2. bare numeric modifier on the head.
+    # 2. bare numeric modifier on the head (skip years/dates, e.g. "1903 Prize").
     for child in head.children:
-        if child.dep_ == "nummod":
+        if child.dep_ == "nummod" and not _is_temporal(child):
             return {
                 "text": child.text,
                 "value": _to_value(child.text),

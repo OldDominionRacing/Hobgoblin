@@ -64,6 +64,13 @@ def test_governing_verb_and_count_and_date():
     assert any(d["text"].lower().endswith("tuesday") for d in ctx["dates"])
 
 
+def test_year_is_not_counted():
+    # "1903" in "the 1903 Nobel Prize" is a year (DATE), not a count.
+    ents = extract("She won the 1903 Nobel Prize in Physics.", items=False)
+    prize = _by_head(ents, "Prize")
+    assert prize["context"]["count"] is None
+
+
 def test_bare_numeric_count():
     ents = extract("She has three cats.")
     cats = _by_head(ents, "cats")
