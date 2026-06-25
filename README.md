@@ -40,6 +40,13 @@ ents  = extract("Call John Smith at 555-123-4567; his office is at 123 Main St."
 items = item_index(ents)   # item-centric view: each item -> best_entity + ranked list
 ```
 
+For a full end-to-end walkthrough (typed entities, counts, military units, item
+association), see [`examples/intel_report.py`](examples/intel_report.py):
+
+```bash
+python examples/intel_report.py
+```
+
 ## Roadmap
 
 - [x] `hobgoblin.extract()` — entity + context extraction (spaCy POS/dependency)
