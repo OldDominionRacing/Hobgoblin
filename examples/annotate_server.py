@@ -95,7 +95,7 @@ PAGE = """<!doctype html>
 <script>
 const DEFAULT_TEXT = __DEFAULT_TEXT__;
 const CAT_COLORS = { name:"#caa24a", military_unit:"#6fa8dc", facility:"#7bbf6a",
-  equipment:"#cd7be0", entity:"#3a4150" };
+  equipment:"#cd7be0", place:"#56b6c2", entity:"#3a4150" };
 const ITEM_COLORS = { phone:"#e08a4a", email:"#e08a4a", url:"#e08a4a",
   address:"#7bbf6a", coordinate:"#7bbf6a", date:"#6fa8dc", time:"#6fa8dc",
   money:"#caa24a", percent:"#caa24a", default:"#5a6275" };

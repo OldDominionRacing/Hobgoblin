@@ -23,7 +23,9 @@ from typing import Iterable, Union
 
 from .match import term_matches
 
-NAME = "@name"  # sentinel: use the deterministic name detector for this category
+# Sentinels: a category can match by *rule* instead of a word list.
+NAME = "@name"    # person names (spaCy PERSON, or an honorific in the chunk)
+PLACE = "@place"  # countries/states/cities (spaCy GPE/LOC)
 
 # Honorifics are a strong, deterministic person-name cue (without relying on a name
 # list). Title-case alone is too ambiguous — it flags places and capitalized units.
@@ -33,27 +35,9 @@ _HONORIFICS = {
     "lt", "lieutenant", "maj", "major", "pvt", "private", "cpl", "corporal",
     "cmdr", "commander", "adm", "admiral", "pfc", "spc", "specialist", "cpt",
 }
+_PLACE_ENTS = {"GPE", "LOC"}
 
 AnchorSpec = Union[Iterable[str], dict]
-
-
-def _normalize(anchors: AnchorSpec):
-    """Return (groups, report_labels) where groups = [(label, variants, use_name)]."""
-    if isinstance(anchors, dict):
-        groups = []
-        for label, variants in anchors.items():
-            if isinstance(variants, str):
-                if variants == NAME:
-                    groups.append((label, [], True))
-                    continue
-                variants = [variants]
-            vs = list(variants)
-            use_name = NAME in vs
-            groups.append((label, [v for v in vs if v != NAME], use_name))
-        return groups, True
-    # flat list: each term is its own label
-    groups = [(t, [], True) if t == NAME else (t, [t], False) for t in anchors]
-    return groups, False
 
 
 def _looks_like_name(ent: dict) -> bool:
@@ -62,6 +46,31 @@ def _looks_like_name(ent: dict) -> bool:
     return any(
         t["text"].lower().rstrip(".") in _HONORIFICS for t in ent.get("tokens", [])
     )
+
+
+def _looks_like_place(ent: dict) -> bool:
+    return ent.get("head_ent") in _PLACE_ENTS
+
+
+# Rule sentinels -> predicate. A category may include any of these alongside terms.
+_RULES = {NAME: _looks_like_name, PLACE: _looks_like_place}
+
+
+def _normalize(anchors: AnchorSpec):
+    """Return (groups, report_labels) where groups = [(label, terms, rules)]."""
+    if isinstance(anchors, dict):
+        groups = []
+        for label, variants in anchors.items():
+            if isinstance(variants, str):
+                variants = [variants]
+            vs = list(variants)
+            rules = [r for r in vs if r in _RULES]
+            terms = [v for v in vs if v not in _RULES]
+            groups.append((label, terms, rules))
+        return groups, True
+    # flat list: each term is its own label (a sentinel becomes a rule-only group)
+    groups = [(t, [], [t]) if t in _RULES else (t, [t], []) for t in anchors]
+    return groups, False
 
 
 def apply_anchors(
@@ -89,12 +98,10 @@ def apply_anchors(
             tokens.add(t.get("lemma", t["text"]))
 
         matched = []
-        for label, variants, use_name in groups:
-            hit = any(
-                term_matches(v, tok, fuzzy) for v in variants for tok in tokens
-            )
-            if not hit and use_name and _looks_like_name(ent):
-                hit = True
+        for label, terms, rules in groups:
+            hit = any(term_matches(v, tok, fuzzy) for v in terms for tok in tokens)
+            if not hit:
+                hit = any(_RULES[r](ent) for r in rules)
             if hit:
                 matched.append(label)
         ent["anchors_matched"] = sorted(set(matched))

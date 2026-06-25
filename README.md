@@ -71,8 +71,8 @@ the actual URL on startup).
 - [x] Military unit recognizer (`detect_units`): cardinal/Roman/ordinal/letter
       designations (`3 Corps`, `I Corps`, `1st Infantry Division`, `C Company`)
 - [x] Smart anchors: fuzzy typo matching (`brigdae`→brigade), abbreviation
-      aliases (`BDE`), categorized output (unit/facility/equipment), rule-based
-      `NAME` detector, and a built-in `ANCHORS` pack
+      aliases (`BDE`), categorized output (unit/facility/equipment/place),
+      rule-based `NAME` + `PLACE` detectors, and a built-in `ANCHORS` pack
 - [ ] Wizard escalation — LLM fallback when the goblin's confidence is low
 - [ ] TypeScript port (`compromise` / `wink-nlp`; shared JSON schema)
 - [ ] More primitives: `ocr()`, `classify()`, …

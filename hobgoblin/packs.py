@@ -14,7 +14,35 @@ corpus. Abbreviations are upper-case so they match exactly (no fuzzy collisions)
 spelled-out words match fuzzily, so most typos are caught without listing them all.
 """
 
-from .anchors import NAME
+from .anchors import NAME, PLACE
+
+# Deterministic gazetteers — a backstop to spaCy's GPE/LOC NER (which degrades on
+# all-caps / de-cased text). Full names only: 2-letter abbreviations like "OR"/"IN"
+# would collide with common words under case-insensitive matching.
+US_STATES = [
+    "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado",
+    "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho",
+    "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine",
+    "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi",
+    "Missouri", "Montana", "Nebraska", "Nevada", "Ohio", "Oklahoma", "Oregon",
+    "Pennsylvania", "Tennessee", "Texas", "Utah", "Vermont", "Virginia",
+    "Washington", "Wisconsin", "Wyoming",
+    "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina",
+    "North Dakota", "Rhode Island", "South Carolina", "South Dakota",
+    "West Virginia",
+]
+COUNTRIES = [
+    "Afghanistan", "Argentina", "Australia", "Austria", "Bangladesh", "Belgium",
+    "Brazil", "Canada", "Chile", "China", "Colombia", "Cuba", "Denmark", "Egypt",
+    "England", "Ethiopia", "Finland", "France", "Germany", "Greece", "India",
+    "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Japan", "Jordan",
+    "Kenya", "Kuwait", "Lebanon", "Mexico", "Morocco", "Netherlands",
+    "New Zealand", "Nigeria", "Norway", "Pakistan", "Peru", "Philippines",
+    "Poland", "Portugal", "Qatar", "Romania", "Russia", "Saudi Arabia",
+    "Scotland", "Singapore", "Somalia", "South Korea", "Spain", "Sweden",
+    "Switzerland", "Syria", "Taiwan", "Thailand", "Turkey", "Ukraine",
+    "United Kingdom", "United States", "Venezuela", "Vietnam", "Wales", "Yemen",
+]
 
 ANCHORS = {
     "military_unit": [
@@ -45,4 +73,6 @@ ANCHORS = {
         "IED", "NVG", "GPS",
     ],
     "name": NAME,
+    # NER GPE/LOC rule first (cities + anything spaCy tags), gazetteer as backstop.
+    "place": [PLACE] + COUNTRIES + US_STATES,
 }

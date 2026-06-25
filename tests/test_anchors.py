@@ -88,6 +88,22 @@ def test_name_via_person_ner():
     assert hits
 
 
+def test_place_via_ner():
+    hits = [e for e in extract("They drove to Paris and North Carolina.", anchors=ANCHORS)
+            if "place" in e["anchors_matched"]]
+    heads = {e["head"] for e in hits}
+    assert "Paris" in heads
+    assert any("Carolina" in h for h in heads)
+
+
+def test_place_gazetteer_backstops_all_caps():
+    # NER fails on all-caps; the country/state gazetteer still catches these
+    ents = extract("UNITS MOVED FROM TEXAS TO FRANCE.", anchors=ANCHORS)
+    placed = {e["entity"] for e in ents if "place" in e["anchors_matched"]}
+    assert any("TEXAS" in p for p in placed)
+    assert any("FRANCE" in p for p in placed)
+
+
 def test_capitalized_unit_not_flagged_as_name():
     # a capitalized misspelled unit must NOT be tagged a name
     ents = extract("The 3rd Brigdae and B Battery advanced.", anchors=ANCHORS)

@@ -98,14 +98,18 @@ Anchors come in two shapes:
   **exactly only** — fuzzy-matching `BAT` would collide with `bad`/`cat`/`bot`.
 - disable entirely with `fuzzy=False`.
 
-**Names** can't be enumerated (too many spellings), so the `NAME` sentinel matches by
-*rule* instead of a word list: an entity is a name if its head is a spaCy `PERSON`, or
-the chunk contains an **honorific** (Colonel/Dr/Sgt/…). Title-case alone is *not* used
-— it flags places and capitalized units.
+Some categories can't be enumerated, so they match by **rule** via a sentinel value
+instead of a word list:
+- **`NAME`** — head is a spaCy `PERSON`, or the chunk contains an **honorific**
+  (Colonel/Dr/Sgt/…). Title-case alone is *not* used (it flags places/units).
+- **`PLACE`** — head is a spaCy `GPE`/`LOC` (countries, states, cities). Backed by a
+  country/state **gazetteer** so it still fires on all-caps text where NER fails.
 
-A ready-made **`ANCHORS`** pack (`military_unit`/`facility`/`equipment`/`name`, with
-echelons, abbreviations, and common misspellings) ships in `packs.py`. Category keys
-are namespaced by domain so packs stay generic and mixable.
+A category may mix rules and terms, e.g. `"place": [PLACE] + COUNTRIES + US_STATES`.
+
+A ready-made **`ANCHORS`** pack (`military_unit`/`facility`/`equipment`/`name`/`place`,
+with echelons, abbreviations, common misspellings, and a place gazetteer) ships in
+`packs.py`. Category keys are namespaced by domain so packs stay generic and mixable.
 
 Earlier flat-list behavior (single match rule):
 - **Match rule:** **lemma, case-insensitive** (`apple` matches `apples`, `Apple`).
