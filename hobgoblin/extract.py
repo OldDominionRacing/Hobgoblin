@@ -15,6 +15,7 @@ from ._model import DEFAULT_MODEL, load
 from .anchors import apply_anchors
 from .associate import relatedness
 from .items import detect as detect_items
+from .military import annotate as annotate_units
 
 # Lightweight word -> number map for count values. Unknown words keep value=None.
 _NUM_WORDS = {
@@ -148,6 +149,7 @@ def extract(
     anchor_mode: str = "flag",
     items: bool = True,
     min_weight: float = 0.1,
+    military: bool = True,
     model: str = DEFAULT_MODEL,
 ) -> list[dict]:
     """Extract entities and their context from ``text``.
@@ -207,6 +209,7 @@ def extract(
                 "modifiers": _modifiers(head),
                 "context": context,
                 "associations": [],
+                "mil_unit": None,
                 "anchors_matched": [],
                 "part_of": None,
                 # internal: token coordinates for relatedness scoring (stripped below)
@@ -220,6 +223,9 @@ def extract(
 
     if items:
         _attach_associations(doc, entities, min_weight)
+
+    if military:
+        annotate_units(doc, entities)
 
     for ent in entities:
         del ent["_tok_start"], ent["_tok_end"], ent["_root_i"]

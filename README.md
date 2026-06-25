@@ -47,6 +47,8 @@ items = item_index(ents)   # item-centric view: each item -> best_entity + ranke
 - [x] Expanded item types: email, url, uuid, mac, ip, coordinate, date, time,
       credit_card (Luhn), ssn, phone, address, money, percent, handle, hashtag,
       file_path, zip
+- [x] Military unit recognizer (`detect_units`): cardinal/Roman/ordinal/letter
+      designations (`3 Corps`, `I Corps`, `1st Infantry Division`, `C Company`)
 - [ ] Wizard escalation — LLM fallback when the goblin's confidence is low
 - [ ] TypeScript port (`compromise` / `wink-nlp`; shared JSON schema)
 - [ ] More primitives: `ocr()`, `classify()`, …

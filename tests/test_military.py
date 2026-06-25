@@ -1,0 +1,80 @@
+"""Tests for military unit designation recognition."""
+
+import pytest
+
+from hobgoblin import detect_units, extract
+from hobgoblin.military import _valid_roman, _roman_to_int
+
+pytest.importorskip("spacy", reason="spaCy not installed")
+
+try:
+    import spacy
+
+    spacy.load("en_core_web_sm")
+except Exception:  # noqa: BLE001
+    pytest.skip(
+        "en_core_web_sm not installed: python -m spacy download en_core_web_sm",
+        allow_module_level=True,
+    )
+
+
+def _one(text):
+    units = detect_units(text)
+    assert len(units) == 1, units
+    return units[0]
+
+
+def test_cardinal_designation():
+    u = _one("3 Corps moved out.")
+    assert u["echelon"] == "Corps"
+    assert u["designation"] == 3
+    assert u["designation_form"] == "cardinal"
+
+
+def test_roman_designation():
+    assert _one("I Corps held the line.")["designation"] == 1
+    assert _one("V Corps advanced.")["designation"] == 5
+    u = _one("XVIII Airborne Corps deployed.")
+    assert u["designation"] == 18
+    assert u["branch"] == "Airborne"
+
+
+def test_ordinal_with_branch():
+    u = _one("The 1st Infantry Division fought hard.")
+    assert u["designation"] == 1
+    assert u["designation_form"] == "ordinal"
+    assert u["branch"] == "Infantry"
+
+
+def test_letter_company():
+    u = _one("C Company relieved the position.")
+    assert u["echelon"] == "Company"
+    assert u["designation"] == "C"
+    assert u["designation_form"] == "letter"
+
+
+def test_pronoun_I_is_not_a_unit():
+    assert detect_units("I went home after the war.") == []
+
+
+def test_world_war_is_not_a_unit():
+    assert detect_units("World War II ended in 1945.") == []
+
+
+def test_roman_validation():
+    assert _valid_roman("XVIII")
+    assert not _valid_roman("IIII")  # malformed
+    assert not _valid_roman("VV")
+    assert _roman_to_int("XIV") == 14
+
+
+def test_extract_annotates_entities():
+    ents = extract("The 1st Infantry Division and I Corps deployed in 1944.")
+    annotated = {e["entity"]: e["mil_unit"] for e in ents if e["mil_unit"]}
+    assert any(m and m["echelon"] == "Division" for m in annotated.values())
+    assert any(m and m["echelon"] == "Corps" for m in annotated.values())
+
+
+def test_military_can_be_disabled():
+    ents = extract("The 1st Infantry Division deployed.", military=False)
+    assert all(e["mil_unit"] is None for e in ents)
