@@ -54,8 +54,12 @@ Hover for a tooltip (type + what it's associated to); click an entity for its fu
 element breakdown.
 
 ```bash
-python examples/annotate_server.py      # open http://localhost:8000
+python examples/annotate_server.py            # open http://localhost:8421
+python examples/annotate_server.py --port 9000  # or pick your own
 ```
+
+It falls back to a free port automatically if the chosen one is taken (it prints
+the actual URL on startup).
 
 ## Roadmap
 

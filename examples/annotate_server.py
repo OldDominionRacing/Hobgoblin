@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """A tiny local web viewer for Hobgoblin annotations.
 
-    python examples/annotate_server.py          # then open http://localhost:8000
+    python examples/annotate_server.py          # then open http://localhost:8421
+    python examples/annotate_server.py --port 9000   # or choose your own
 
 Paste text, hit Annotate, and the page draws a pill around every entity and item.
 Hover a pill for a tooltip (its type / what it's associated to); click an entity
@@ -257,14 +258,25 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
 
+def _serve(port):
+    """Bind to ``port``; if it's taken, let the OS pick any free port."""
+    try:
+        return ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    except OSError:
+        print(f"port {port} is in use — picking a free one instead")
+        return ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--port", type=int, default=8000)
+    ap.add_argument("--port", type=int, default=8421,
+                    help="preferred port (falls back to a free one if taken)")
     args = ap.parse_args()
     print("Loading spaCy model…")
     extract("warm up the model")  # so the first request is fast
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
-    print(f"Hobgoblin viewer running at http://localhost:{args.port}  (Ctrl-C to stop)")
+    server = _serve(args.port)
+    port = server.server_address[1]
+    print(f"Hobgoblin viewer running at http://localhost:{port}  (Ctrl-C to stop)")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
