@@ -3,9 +3,10 @@
 Anchors come in two shapes:
 
 - **flat list** ``["brigade", "tank"]`` — ``anchors_matched`` reports matched terms.
-- **categorized dict** ``{"unit": ["brigade", "BDE"], "name": NAME}`` —
+- **categorized dict** ``{"military_unit": ["brigade", "BDE"], "name": NAME}`` —
   ``anchors_matched`` reports matched *category* labels, turning the POS finder into
-  a typed extractor.
+  a typed extractor. Category keys are arbitrary; namespace them by domain
+  (``military_unit``, ``medical_facility``, …) so packs can be mixed.
 
 Each term matches an entity token **exactly or fuzzily** (see ``match.py``):
 case-insensitive, with edit-distance tolerance for typos ("brigdae" -> brigade) but

@@ -103,8 +103,9 @@ Anchors come in two shapes:
 the chunk contains an **honorific** (Colonel/Dr/Sgt/…). Title-case alone is *not* used
 — it flags places and capitalized units.
 
-A ready-made **`MILITARY_ANCHORS`** pack (unit/facility/equipment/name, with echelons,
-abbreviations, and common misspellings) ships in `packs.py`.
+A ready-made **`ANCHORS`** pack (`military_unit`/`facility`/`equipment`/`name`, with
+echelons, abbreviations, and common misspellings) ships in `packs.py`. Category keys
+are namespaced by domain so packs stay generic and mixable.
 
 Earlier flat-list behavior (single match rule):
 - **Match rule:** **lemma, case-insensitive** (`apple` matches `apples`, `Apple`).

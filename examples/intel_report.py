@@ -14,7 +14,7 @@ It shows the full deterministic ("goblin-first") pipeline on one paragraph:
   5. the inverted item -> best-entity view
 """
 
-from hobgoblin import extract, item_index, detect_units, MILITARY_ANCHORS, NAME
+from hobgoblin import extract, item_index, detect_units, ANCHORS, NAME
 
 REPORT = (
     "On 14 March 2025, Colonel John Smith reported that the 3rd Brigdae and "
@@ -26,10 +26,10 @@ REPORT = (
 # You can use the built-in military pack as-is, or extend it. Here we add a couple
 # of corpus-specific aliases/misspellings on top of the defaults.
 anchors = {
-    "name": NAME,                                  # rule-based (PERSON or honorific)
-    "unit": MILITARY_ANCHORS["unit"] + ["bgd"],    # extend with your own alias
-    "facility": MILITARY_ANCHORS["facility"],
-    "equipment": MILITARY_ANCHORS["equipment"],
+    "name": NAME,                                            # rule-based
+    "military_unit": ANCHORS["military_unit"] + ["bgd"],     # extend with your alias
+    "facility": ANCHORS["facility"],
+    "equipment": ANCHORS["equipment"],
 }
 
 

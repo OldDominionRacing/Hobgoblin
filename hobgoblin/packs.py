@@ -1,8 +1,13 @@
-"""Ready-made anchor packs so you don't hand-build term lists.
+"""Ready-made anchor pack so you don't hand-build term lists.
 
-``MILITARY_ANCHORS`` is a categorized anchor dict (unit / facility / equipment /
-name) seeded with echelon words, common abbreviations, and frequent misspellings.
-Pass it straight to ``extract(text, anchors=MILITARY_ANCHORS)``, or copy and extend.
+``ANCHORS`` is a categorized anchor dict you can pass straight to
+``extract(text, anchors=ANCHORS)``, or copy and extend. It is meant to be generic:
+category keys are namespaced by domain (e.g. ``military_unit``) so you can mix in
+your own categories — ``medical_facility``, ``legal_party``, ``vehicle``, etc. —
+without collisions.
+
+Each category maps to a list of terms; the special ``name`` category uses the
+``NAME`` sentinel for rule-based person detection instead of a word list.
 
 These lists are intentionally non-exhaustive starting points — extend them for your
 corpus. Abbreviations are upper-case so they match exactly (no fuzzy collisions);
@@ -11,8 +16,8 @@ spelled-out words match fuzzily, so most typos are caught without listing them a
 
 from .anchors import NAME
 
-MILITARY_ANCHORS = {
-    "unit": [
+ANCHORS = {
+    "military_unit": [
         # echelons (matched fuzzily — typos tolerated)
         "army", "corps", "division", "brigade", "regiment", "battalion",
         "company", "battery", "squadron", "platoon", "troop", "section",

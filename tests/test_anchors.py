@@ -2,7 +2,7 @@
 
 import pytest
 
-from hobgoblin import extract, MILITARY_ANCHORS
+from hobgoblin import extract, ANCHORS
 from hobgoblin.match import osa_distance, term_matches
 
 pytest.importorskip("spacy", reason="spaCy not installed")
@@ -77,21 +77,21 @@ def test_categories_reported():
 
 # --- names -----------------------------------------------------------------
 def test_name_via_honorific():
-    hits = [e for e in extract("Colonel Brigdae signed off.", anchors=MILITARY_ANCHORS)
+    hits = [e for e in extract("Colonel Brigdae signed off.", anchors=ANCHORS)
             if "name" in e["anchors_matched"]]
     assert hits  # honorific 'Colonel' marks it a name even with odd spelling
 
 
 def test_name_via_person_ner():
-    hits = [e for e in extract("John Smith arrived.", anchors=MILITARY_ANCHORS)
+    hits = [e for e in extract("John Smith arrived.", anchors=ANCHORS)
             if "name" in e["anchors_matched"]]
     assert hits
 
 
 def test_capitalized_unit_not_flagged_as_name():
     # a capitalized misspelled unit must NOT be tagged a name
-    ents = extract("The 3rd Brigdae and B Battery advanced.", anchors=MILITARY_ANCHORS)
+    ents = extract("The 3rd Brigdae and B Battery advanced.", anchors=ANCHORS)
     for e in ents:
         if "Brigdae" in e["entity"]:
             assert "name" not in e["anchors_matched"]
-            assert "unit" in e["anchors_matched"]
+            assert "military_unit" in e["anchors_matched"]
