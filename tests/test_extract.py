@@ -71,6 +71,20 @@ def test_year_is_not_counted():
     assert prize["context"]["count"] is None
 
 
+def test_of_phrase_without_numeral_is_not_a_count():
+    # "division of the United States Army" -> "Army" is pobj of "of" but there's
+    # no numeral, so it must not be reported as a count.
+    ents = extract("It is a division of the United States Army.", items=False)
+    army = _by_head(ents, "Army")
+    assert army["context"]["count"] is None
+
+
+def test_ordinal_unit_name_is_not_counted():
+    ents = extract("The 1st Infantry Division fought bravely.", items=False)
+    div = _by_head(ents, "Division")
+    assert div["context"]["count"] is None
+
+
 def test_bare_numeric_count():
     ents = extract("She has three cats.")
     cats = _by_head(ents, "cats")

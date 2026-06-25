@@ -87,21 +87,22 @@ def _find_count(head) -> Optional[dict]:
       2. bare numeric:      "three apples"               (nummod on head)
       3. quantity word:     "several apples"             (value left as None)
     """
-    # 1. measure-of construction: head is the object of an "of" preposition.
+    # 1. measure-of construction: "three boxes of apples" (head is pobj of "of").
+    # Only a count if the measure actually carries a numeral — a bare "of" phrase
+    # ("division of the Army") is not a count.
     if head.dep_ == "pobj" and head.head.lemma_ == "of" and head.head.pos_ == "ADP":
         helper = head.head
         measure = helper.head
-        count = {
-            "measure": {"text": measure.text, "span": _span(measure)},
-            "helper": {"text": helper.text, "span": _span(helper)},
-        }
         for child in measure.children:
             if child.dep_ == "nummod" and not _is_temporal(child):
-                count.update(
-                    text=child.text, value=_to_value(child.text), span=_span(child)
-                )
-                break
-        return count
+                return {
+                    "text": child.text,
+                    "value": _to_value(child.text),
+                    "span": _span(child),
+                    "measure": {"text": measure.text, "span": _span(measure)},
+                    "helper": {"text": helper.text, "span": _span(helper)},
+                }
+        # no numeral -> fall through to other count shapes / None
 
     # 2. bare numeric modifier on the head (skip years/dates, e.g. "1903 Prize").
     for child in head.children:
