@@ -21,9 +21,11 @@ from hobgoblin import extract, item_index, ANCHORS
 
 DEFAULT_TEXT = (
     "On 14 March 2025, Colonel John Smith reported that the 3rd Brigade and "
-    "I Corps moved roughly 12 HMMWV trucks to Fort Bragg. "
+    "I Corps moved roughly 12 HMMWV trucks to Fort Bragg.\n\n"
     "B Battery held the depot at 35.139, -79.006 with about 3 vehicles. "
-    "Contact the TOC at 555-867-5309 between 2 and 4 patrols per day."
+    "The unit requested between 2 and 4 resupply convoys per day.\n\n"
+    "Contact Major Davis at the TOC on 555-867-5309. XVIII Airborne Corps "
+    "will assume command of the sector by 20 March 2025."
 )
 
 PAGE = """<!doctype html>
@@ -42,14 +44,14 @@ PAGE = """<!doctype html>
   header h1 .g { color:var(--accent); }
   .wrap { display:grid; grid-template-columns: 1fr 360px; gap:0; height:calc(100vh - 53px); }
   .left { padding:18px 20px; overflow:auto; }
-  textarea { width:100%; height:90px; background:var(--panel); color:var(--ink);
+  textarea { width:100%; height:140px; background:var(--panel); color:var(--ink);
              border:1px solid var(--line); border-radius:8px; padding:10px; resize:vertical;
              font:14px/1.5 ui-monospace,Menlo,monospace; }
   .row { display:flex; gap:10px; align-items:center; margin:10px 0 16px; }
   button { background:var(--accent); color:#0b0d10; border:0; border-radius:7px;
            padding:8px 14px; font-weight:650; cursor:pointer; }
   button.ghost { background:transparent; color:var(--muted); border:1px solid var(--line); }
-  #doc { font-size:16px; line-height:2.1; }
+  #doc { font-size:16px; line-height:2.1; white-space:pre-wrap; }
   .legend { color:var(--muted); font-size:12px; margin-left:auto; }
   .pill { border-radius:999px; padding:1px 8px; cursor:pointer; white-space:nowrap;
           border:1px solid transparent; }

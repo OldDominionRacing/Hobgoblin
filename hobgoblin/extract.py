@@ -14,7 +14,7 @@ from typing import Iterable, Optional
 
 from ._model import DEFAULT_MODEL, load
 from .anchors import apply_anchors
-from .associate import relatedness
+from .associate import relatedness, paragraphs as _paragraphs
 from .items import detect as detect_items
 from .military import annotate as annotate_units
 
@@ -365,7 +365,7 @@ def extract(
     _link_overlaps(entities)
 
     if items:
-        _attach_associations(doc, entities, min_weight)
+        _attach_associations(doc, entities, min_weight, _paragraphs(src))
 
     if military:
         annotate_units(doc, entities, echelons=unit_echelons, text=src)
@@ -382,7 +382,7 @@ def extract(
     return entities
 
 
-def _attach_associations(doc, entities: list[dict], min_weight: float) -> None:
+def _attach_associations(doc, entities: list[dict], min_weight: float, paras=None) -> None:
     """Score every (entity, item) pair and attach those above ``min_weight``."""
     found = detect_items(doc)
     if not found:
@@ -404,7 +404,7 @@ def _attach_associations(doc, entities: list[dict], min_weight: float) -> None:
             i_s, i_e = item["span"]
             if i_s < e_e and e_s < i_e:
                 continue  # entity overlaps the item itself — not an association
-            weight, signals = relatedness(doc, ent, item, entity_spans)
+            weight, signals = relatedness(doc, ent, item, entity_spans, paras)
             if weight >= min_weight:
                 rec = {
                     "type": item["type"],

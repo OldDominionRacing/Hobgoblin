@@ -14,6 +14,7 @@ when another entity sits between the item and this one.
 from __future__ import annotations
 
 import math
+import re
 
 LAMBDA_T = 5.0
 LAMBDA_D = 2.0
@@ -21,6 +22,20 @@ A_LIN = 0.4
 B_DEP = 0.6
 CROSS = 0.3
 PENALTY = 0.5
+
+
+def paragraphs(text: str) -> list[tuple[int, int]]:
+    """Char spans of paragraphs (blank-line separated). Falls back to one span."""
+    spans = [(m.start(), m.end())
+             for m in re.finditer(r"[^\n].*?(?=\n\s*\n|\Z)", text, re.S)]
+    return spans or [(0, len(text))]
+
+
+def _para_index(offset: int, paras: list[tuple[int, int]]) -> int:
+    for i, (s, e) in enumerate(paras):
+        if s <= offset < e:
+            return i
+    return -1
 
 
 def _token_distance(a: tuple[int, int], b: tuple[int, int]) -> int:
@@ -53,8 +68,14 @@ def _dep_distance(doc, i: int, j: int):
     return None
 
 
-def relatedness(doc, entity: dict, item: dict, entity_spans: list[list[int]]):
-    """Return ``(weight, signals)`` for one (entity, item) pair."""
+def relatedness(doc, entity: dict, item: dict, entity_spans: list[list[int]],
+                paras: list[tuple[int, int]] | None = None):
+    """Return ``(weight, signals)`` for one (entity, item) pair.
+
+    Paragraphs are a hard boundary: an item never associates to an entity in a
+    different paragraph (weight forced to 0). Sentences are soft (a cross-sentence
+    pair keeps a reduced weight).
+    """
     ent_tok = (entity["_tok_start"], entity["_tok_end"])
     item_tok = (item["tok_start"], item["tok_end"])
 
@@ -69,23 +90,28 @@ def relatedness(doc, entity: dict, item: dict, entity_spans: list[list[int]]):
     else:
         weight = CROSS * prox_lin
 
-    # intervening-entity penalty: another entity sits linearly between them.
-    e_s, e_e = entity["span"]
-    i_s, i_e = item["span"]
-    lo, hi = (e_e, i_s) if e_e <= i_s else (i_e, e_s)
-    for os, oe in entity_spans:
-        if [os, oe] == entity["span"]:
-            continue
-        if lo <= os and oe <= hi:
-            weight *= PENALTY
-            break
+    same_para = None
+    if paras is not None:
+        same_para = _para_index(entity["span"][0], paras) == _para_index(item["span"][0], paras)
+        if not same_para:
+            weight = 0.0
+
+    if weight > 0:
+        # intervening-entity penalty: another entity sits linearly between them.
+        e_s, e_e = entity["span"]
+        i_s, i_e = item["span"]
+        lo, hi = (e_e, i_s) if e_e <= i_s else (i_e, e_s)
+        for os, oe in entity_spans:
+            if [os, oe] == entity["span"]:
+                continue
+            if lo <= os and oe <= hi:
+                weight *= PENALTY
+                break
 
     weight = max(0.0, min(1.0, weight))
-    signals = {
-        "token_distance": td,
-        "dep_distance": dp,
-        "same_sentence": same_sent,
-    }
+    signals = {"token_distance": td, "dep_distance": dp, "same_sentence": same_sent}
+    if same_para is not None:
+        signals["same_paragraph"] = same_para
     return weight, signals
 
 

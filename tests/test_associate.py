@@ -72,6 +72,15 @@ def test_item_is_not_its_own_entity():
     assert "555-123-4567" not in heads
 
 
+def test_associations_do_not_cross_paragraphs():
+    cross = "The depot is secure.\n\nCall 555-867-5309 now."
+    same = "The depot is secure. Call 555-867-5309 now."
+    # phone's only candidate entity ("depot") is in the other paragraph -> no link
+    assert item_index(extract(cross)) == []
+    # same paragraph -> it links
+    assert item_index(extract(same))
+
+
 def test_address_components_when_usaddress_available():
     pytest.importorskip("usaddress")
     ents = extract(TEXT)
