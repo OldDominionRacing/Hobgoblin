@@ -92,6 +92,15 @@ def test_bare_numeric_count():
     assert "measure" not in cats["context"]["count"]
 
 
+@pytest.mark.parametrize("text", ["3x cars drove off.", "3X cars", "3× cars here."])
+def test_multiplier_shorthand_counts(text):
+    ents = extract(text, items=False, military=False)
+    cars = _by_head(ents, "cars")
+    count = cars["context"]["count"]
+    assert count["value"] == 3
+    assert count["form"] == "multiplier"
+
+
 def test_anchors_flag_mode_marks_all():
     ents = extract(SENT, anchors=["apple"])
     apples = _by_head(ents, "apples")

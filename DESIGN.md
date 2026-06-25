@@ -61,9 +61,17 @@ For each entity, collect its sentence's **elements**, each with `[start_char, en
 
 - **verb** — the **governing verb** for *this* entity, resolved via the dependency
   parse (not necessarily the sentence's root verb).
-- **count + helper** — broad matching: `NUM`, measure/container words ("three **boxes
-  of**", "a **cup of**"), bare numerics ("three apples"), quantity words ("a **dozen**",
-  "**several**", "a **lot of**").
+- **count + helper** — broad matching, in priority order:
+  1. **measure/container**: "three **boxes of** apples" (only when a numeral is
+     present — a bare `of`-phrase like "division of the Army" is *not* a count).
+  2. **multiplier shorthand**: "**3x** cars", "**3X** cars", "**3×** cars" → value 3.
+  3. **bare numeric**: "three apples", "12 boxes".
+  4. **quantity words**: "a **dozen**", "**several**", "a **lot of**".
+  - A numeral that is part of a `DATE`/`TIME` span is a **year, not a count**
+    ("the 1903 Nobel Prize" → no count).
+  - *Known gaps:* ranges ("3–5 cars"), approximators ("~3", "about 3"), and the
+    suffix multiplier ("cars x3", which spaCy splits inconsistently) are not yet
+    handled.
 - **dates** — from spaCy's built-in NER `DATE` / `TIME` labels.
 - **modifiers** — the adjectives/compounds decorating the head.
 - **annotations** — per-token `lemma`, `pos`, `dep`.
@@ -226,6 +234,12 @@ from `I went home` (pronoun), and `World War II` is never mistaken for a unit.
 `extract()` annotates any entity whose head sits inside a detected unit with a
 `mil_unit` field (`echelon`, `branch`, `designation`, `designation_text`,
 `designation_form`); disable with `military=False`.
+
+**Caveat — the echelon vocabulary is the whole engine.** Recognition is driven by a
+fixed, English/US-NATO-army-centric list (`DEFAULT_ECHELONS`). It will miss naval
+rates, foreign-language echelons, and any org chart that doesn't use these words.
+This is a documented assumption, not a bug: override it with
+`detect_units(text, echelons=[...])` or `extract(text, unit_echelons=[...])`.
 
 ---
 

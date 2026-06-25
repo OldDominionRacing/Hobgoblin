@@ -22,20 +22,33 @@ from __future__ import annotations
 
 import re
 
-# Multi-word echelons must precede their single-word substrings in the alternation.
-_ECHELONS = [
+# CAVEAT: recognition is driven entirely by this fixed vocabulary of echelons.
+# It is English- and US/NATO-army-centric; it will miss naval rates, foreign-language
+# echelons, joint task-force names, and any org chart that doesn't use these words.
+# This is a deliberate, documented assumption — pass your own list via the
+# ``echelons=`` argument of ``detect_units`` / ``annotate`` to override it.
+DEFAULT_ECHELONS = [
     "Field Army", "Army Group", "Task Force", "Corps", "Division", "Brigade",
     "Regiment", "Battalion", "Squadron", "Company", "Battery", "Platoon",
     "Troop", "Wing", "Group", "Fleet", "Command", "Army",
 ]
-_COMPANY_LEVEL = {"Company", "Battery", "Troop", "Platoon"}
+# Echelons small enough that a lone letter before them is a letter designation
+# ("C Company") rather than a Roman numeral.
+DEFAULT_COMPANY_LEVEL = {"Company", "Battery", "Troop", "Platoon"}
 _ROMAN = {"I": 1, "V": 5, "X": 10, "L": 50, "C": 100, "D": 500, "M": 1000}
 
-_UNIT_RE = re.compile(
-    r"\b(?P<desig>\d{1,3}(?:st|nd|rd|th)?|[IVXLCDM]{1,7})\s+"
-    r"(?P<branch>(?:[A-Z][a-z]+\s+){0,3})"
-    r"(?P<echelon>" + "|".join(re.escape(e) for e in _ECHELONS) + r")\b"
-)
+
+def _build_regex(echelons):
+    # Longest echelons first so multi-word ones win over their substrings.
+    alts = "|".join(re.escape(e) for e in sorted(echelons, key=len, reverse=True))
+    return re.compile(
+        r"\b(?P<desig>\d{1,3}(?:st|nd|rd|th)?|[IVXLCDM]{1,7})\s+"
+        r"(?P<branch>(?:[A-Z][a-z]+\s+){0,3})"
+        r"(?P<echelon>" + alts + r")\b"
+    )
+
+
+_DEFAULT_RE = _build_regex(DEFAULT_ECHELONS)
 
 
 def _int_to_roman(n: int):
@@ -70,7 +83,7 @@ def _valid_roman(s: str) -> bool:
     return v is not None and _int_to_roman(v) == s.upper()
 
 
-def _parse_designation(text: str, echelon: str) -> dict:
+def _parse_designation(text: str, echelon: str, company_level) -> dict:
     """Normalise a designator into a value + form, given its echelon."""
     t = text.strip()
     m = re.fullmatch(r"(\d{1,3})(?:st|nd|rd|th)", t)
@@ -79,7 +92,7 @@ def _parse_designation(text: str, echelon: str) -> dict:
     if t.isdigit():
         return {"designation": int(t), "designation_form": "cardinal"}
     # Single letter before a company-level echelon -> letter designation.
-    if len(t) == 1 and t.isalpha() and echelon in _COMPANY_LEVEL:
+    if len(t) == 1 and t.isalpha() and echelon in company_level:
         return {"designation": t, "designation_form": "letter"}
     if _valid_roman(t):
         return {"designation": _roman_to_int(t), "designation_form": "roman"}
@@ -88,16 +101,22 @@ def _parse_designation(text: str, echelon: str) -> dict:
     return {"designation": None, "designation_form": "unknown"}
 
 
-def detect_units(text: str) -> list[dict]:
+def detect_units(text: str, echelons=None, company_level=None) -> list[dict]:
     """Find military unit designations in ``text``.
 
     Each unit: ``text``, ``span`` (char), ``echelon``, ``branch`` (or None),
     ``designation`` (normalised int/letter), ``designation_text``, ``designation_form``.
+
+    ``echelons`` overrides the (English/US-army-centric) default vocabulary; pass
+    your own list for other services or org charts. ``company_level`` is the subset
+    whose lone-letter designators are read as letters, not Roman numerals.
     """
+    regex = _DEFAULT_RE if echelons is None else _build_regex(echelons)
+    company = DEFAULT_COMPANY_LEVEL if company_level is None else set(company_level)
     units = []
-    for m in _UNIT_RE.finditer(text):
+    for m in regex.finditer(text):
         echelon = m.group("echelon")
-        parsed = _parse_designation(m.group("desig"), echelon)
+        parsed = _parse_designation(m.group("desig"), echelon, company)
         if parsed["designation_form"] == "unknown":
             continue
         branch = (m.group("branch") or "").strip() or None
@@ -112,9 +131,9 @@ def detect_units(text: str) -> list[dict]:
     return units
 
 
-def annotate(doc, entities: list[dict]) -> None:
+def annotate(doc, entities: list[dict], echelons=None) -> None:
     """Attach ``mil_unit`` to any entity whose head sits inside a detected unit."""
-    units = detect_units(doc.text)
+    units = detect_units(doc.text, echelons=echelons)
     if not units:
         return
     for ent in entities:

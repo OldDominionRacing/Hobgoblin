@@ -78,3 +78,13 @@ def test_extract_annotates_entities():
 def test_military_can_be_disabled():
     ents = extract("The 1st Infantry Division deployed.", military=False)
     assert all(e["mil_unit"] is None for e in ents)
+
+
+def test_custom_echelons_override():
+    text = "3rd Flotilla and 7th Squadron sailed."
+    # default vocabulary doesn't know "Flotilla"
+    assert not any(u["echelon"] == "Flotilla" for u in detect_units(text))
+    # custom vocabulary does
+    custom = detect_units(text, echelons=["Flotilla", "Squadron"])
+    echelons = {u["echelon"] for u in custom}
+    assert {"Flotilla", "Squadron"} <= echelons

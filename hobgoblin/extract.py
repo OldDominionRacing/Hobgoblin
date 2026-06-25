@@ -9,6 +9,7 @@ See ``DESIGN.md`` for the full specification.
 
 from __future__ import annotations
 
+import re
 from typing import Iterable, Optional
 
 from ._model import DEFAULT_MODEL, load
@@ -34,6 +35,17 @@ _QUANTITY_WORDS = {
     "several", "many", "few", "numerous", "various", "multiple",
     "some", "lot", "lots", "plenty", "handful",
 }
+
+# Multiplier shorthand: "3x cars", "3X", "3× cars", or suffix "cars x3".
+_MULT_RE = re.compile(r"^(?:(\d[\d,]*)\s*[xX×]|[xX×](\d[\d,]*))$")
+
+
+def _multiplier_value(text: str) -> Optional[float]:
+    """Parse a multiplier token ('3x', '3X', '3×', 'x3') to its number."""
+    m = _MULT_RE.match(text.strip())
+    if not m:
+        return None
+    return _to_value(m.group(1) or m.group(2))
 
 
 def _span(token) -> list[int]:
@@ -105,7 +117,21 @@ def _find_count(head) -> Optional[dict]:
                 }
         # no numeral -> fall through to other count shapes / None
 
-    # 2. bare numeric modifier on the head (skip years/dates, e.g. "1903 Prize").
+    # 2. multiplier shorthand ("3x cars", "3X", "3× cars", "cars x3"). Checked
+    # before bare nummod because spaCy may tag "3X" as a compound, not a number.
+    for child in head.children:
+        if _is_temporal(child):
+            continue
+        mv = _multiplier_value(child.text)
+        if mv is not None:
+            return {
+                "text": child.text,
+                "value": mv,
+                "span": _span(child),
+                "form": "multiplier",
+            }
+
+    # 3. bare numeric modifier on the head (skip years/dates, e.g. "1903 Prize").
     for child in head.children:
         if child.dep_ == "nummod" and not _is_temporal(child):
             return {
@@ -114,7 +140,7 @@ def _find_count(head) -> Optional[dict]:
                 "span": _span(child),
             }
 
-    # 3. quantity word.
+    # 4. quantity word.
     for child in head.children:
         if child.lemma_.lower() in _QUANTITY_WORDS:
             return {
@@ -150,6 +176,7 @@ def extract(
     items: bool = True,
     min_weight: float = 0.1,
     military: bool = True,
+    unit_echelons: Optional[Iterable[str]] = None,
     model: str = DEFAULT_MODEL,
 ) -> list[dict]:
     """Extract entities and their context from ``text``.
@@ -225,7 +252,7 @@ def extract(
         _attach_associations(doc, entities, min_weight)
 
     if military:
-        annotate_units(doc, entities)
+        annotate_units(doc, entities, echelons=unit_echelons)
 
     for ent in entities:
         del ent["_tok_start"], ent["_tok_end"], ent["_root_i"]
