@@ -283,6 +283,7 @@ def extract(
     military: bool = True,
     unit_echelons: Optional[Iterable[str]] = None,
     normalize_case="auto",
+    drop_stops: bool = True,
     model: str = DEFAULT_MODEL,
 ) -> list[dict]:
     """Extract entities and their context from ``text``.
@@ -318,6 +319,11 @@ def extract(
     entities: list[dict] = []
     for chunk in doc.noun_chunks:
         head = chunk.root
+        # Drop bare stopword/pronoun entities ("It", "this", "the") — they're never
+        # what anyone anchors on. Multi-word and content entities are kept (untyped
+        # ones are useful signal for a later LLM pass).
+        if drop_stops and len(chunk) == 1 and (head.is_stop or head.pos_ in ("PRON", "DET")):
+            continue
         sent = chunk.sent
         verb = _governing_verb(head)
 

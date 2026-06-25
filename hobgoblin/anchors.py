@@ -52,6 +52,23 @@ def _looks_like_place(ent: dict) -> bool:
     return ent.get("head_ent") in _PLACE_ENTS
 
 
+def _term_hits(term: str, texts: list[str], lemmas: list[str], fuzzy: bool) -> bool:
+    """Match a (possibly multi-word) term against an entity's token sequence.
+
+    Single-word terms match any token (text or lemma); multi-word terms ("World War",
+    "machine gun") match a contiguous run of tokens in order.
+    """
+    words = term.split()
+    if len(words) <= 1:
+        return (any(term_matches(term, t, fuzzy) for t in texts)
+                or any(term_matches(term, l, fuzzy) for l in lemmas))
+    n = len(words)
+    for i in range(len(texts) - n + 1):
+        if all(term_matches(words[k], texts[i + k], fuzzy) for k in range(n)):
+            return True
+    return False
+
+
 # Rule sentinels -> predicate. A category may include any of these alongside terms.
 _RULES = {NAME: _looks_like_name, PLACE: _looks_like_place}
 
@@ -92,14 +109,13 @@ def apply_anchors(
     groups, _ = _normalize(anchors)
 
     for ent in entities:
-        tokens = set()
-        for t in ent.get("tokens", []):
-            tokens.add(t["text"])
-            tokens.add(t.get("lemma", t["text"]))
+        toks = ent.get("tokens", [])
+        texts = [t["text"] for t in toks]
+        lemmas = [t.get("lemma", t["text"]) for t in toks]
 
         matched = []
         for label, terms, rules in groups:
-            hit = any(term_matches(v, tok, fuzzy) for v in terms for tok in tokens)
+            hit = any(_term_hits(v, texts, lemmas, fuzzy) for v in terms)
             if not hit:
                 hit = any(_RULES[r](ent) for r in rules)
             if hit:

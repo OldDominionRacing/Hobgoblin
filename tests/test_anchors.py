@@ -88,6 +88,19 @@ def test_name_via_person_ner():
     assert hits
 
 
+def test_multi_token_anchor():
+    hits = [e for e in extract("World War II reshaped Europe.", anchors={"event": ["World War"]})
+            if "event" in e["anchors_matched"]]
+    assert hits and hits[0]["entity"] == "World War II"
+
+
+def test_multi_word_pack_term():
+    hits = [e for e in extract("They mounted a machine gun.",
+                               anchors={"equipment": ["machine gun"]})
+            if e["anchors_matched"]]
+    assert hits and "machine" in hits[0]["entity"]
+
+
 def test_place_via_ner():
     hits = [e for e in extract("They drove to Paris and North Carolina.", anchors=ANCHORS)
             if "place" in e["anchors_matched"]]

@@ -151,6 +151,14 @@ def test_normalize_case_can_be_disabled():
     assert len(on) >= len(off)
 
 
+def test_drops_stopword_entities():
+    heads = {e["head"] for e in extract("It moved. The brigade advanced.")}
+    assert "It" not in heads          # bare pronoun dropped
+    assert "brigade" in heads         # content entity kept
+    # disabling the filter keeps them
+    assert "It" in {e["head"] for e in extract("It moved.", drop_stops=False)}
+
+
 def test_plain_count_has_no_range_or_approx():
     count = _by_head(extract("She has three cars.", items=False), "cars")["context"]["count"]
     assert "range" not in count

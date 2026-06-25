@@ -81,6 +81,10 @@ For each entity, collect its sentence's **elements**, each with `[start_char, en
 - **modifiers** — the adjectives/compounds decorating the head.
 - **annotations** — per-token `lemma`, `pos`, `dep`.
 
+Bare stopword / pronoun entities ("It", "this", "the") are dropped (`drop_stops`,
+default on) — they're never anchored on. Content and multi-word **untyped** entities
+are kept on purpose: they're useful raw signal for a later LLM pass.
+
 ### Part 2 — anchors
 
 A second function lets the user feed in **anchors** — the entities they care about.
@@ -89,6 +93,9 @@ Anchors come in two shapes:
 - **flat list** `["brigade", "tank"]` → `anchors_matched` reports matched *terms*.
 - **categorized dict** `{"unit": ["brigade", "BDE"], "name": NAME}` → `anchors_matched`
   reports matched *category labels*, turning the POS finder into a typed extractor.
+
+Anchor terms may be **multi-word** ("World War", "machine gun", "task force") — they
+match a contiguous run of tokens in the entity, so `World War` tags `World War II`.
 
 **Matching is fuzzy-or-exact** (`match.py`, Optimal String Alignment distance):
 - spelled-out words match **fuzzily**, so typos are caught without enumerating them
