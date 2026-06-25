@@ -47,6 +47,16 @@ association), see [`examples/intel_report.py`](examples/intel_report.py):
 python examples/intel_report.py
 ```
 
+### Interactive viewer
+
+A zero-dependency local web viewer draws a pill around every entity and item.
+Hover for a tooltip (type + what it's associated to); click an entity for its full
+element breakdown.
+
+```bash
+python examples/annotate_server.py      # open http://localhost:8000
+```
+
 ## Roadmap
 
 - [x] `hobgoblin.extract()` — entity + context extraction (spaCy POS/dependency)
