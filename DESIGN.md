@@ -145,6 +145,50 @@ Input: `"Last Tuesday, John bought three boxes of red apples."`
 
 ---
 
+## Items of interest & relatedness
+
+Beyond entities, `extract()` detects **items of interest** — phone, email, URL,
+money, street address — and scores how strongly each relates to every entity, fully
+deterministically.
+
+### Detection (deterministic)
+- **phone / email / URL / money** — regex + spaCy token alignment.
+- **address** — regex to find the span, then `usaddress` (a CRF tagger) to validate
+  and parse components. If `usaddress` is absent, regex-only with no `components`.
+- An entity whose **head token** sits inside an item is dropped — it *is* the item,
+  not a separate entity (e.g. a noun-chunk over an email or a street name).
+
+### Relatedness weight (0–1)
+We already pay for a dependency parse, so we blend linear and syntactic distance
+instead of using raw token distance alone:
+
+```
+proximity_lin = exp(-token_distance / 5)      # linear gap
+proximity_dep = exp(-dep_distance   / 2)      # parse-tree hops (same sentence)
+
+same sentence:  weight = 0.4*proximity_lin + 0.6*proximity_dep
+cross sentence: weight = 0.3*proximity_lin
+intervening entity (linearly between, closer):  weight *= 0.5
+```
+
+Weights `>= min_weight` (default `0.1`) attach to each entity as `associations`,
+each carrying its raw `signals` (`token_distance`, `dep_distance`, `same_sentence`)
+so the score is never a black box. The constants live in `associate.py` and are
+tunable; they could later be calibrated by logistic regression on labeled data
+without leaving determinism at inference.
+
+### Two views
+- **Per-entity** (default return): each entity's `associations`, weight-ranked.
+- **Item-centric**: `hobgoblin.item_index(entities)` inverts it — each item with a
+  weight-ranked `entities` list and a `best_entity`.
+
+```python
+ents  = extract(text)            # entities, each with .associations
+items = item_index(ents)         # [{type, text, span, entities[], best_entity}, ...]
+```
+
+---
+
 ## TypeScript parity (planned)
 
 spaCy is Python-only, but the design ports to TS. The output schema above is plain

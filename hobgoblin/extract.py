@@ -13,6 +13,8 @@ from typing import Iterable, Optional
 
 from ._model import DEFAULT_MODEL, load
 from .anchors import apply_anchors
+from .associate import relatedness
+from .items import detect as detect_items
 
 # Lightweight word -> number map for count values. Unknown words keep value=None.
 _NUM_WORDS = {
@@ -138,6 +140,8 @@ def extract(
     anchors: Optional[Iterable[str]] = None,
     *,
     anchor_mode: str = "flag",
+    items: bool = True,
+    min_weight: float = 0.1,
     model: str = DEFAULT_MODEL,
 ) -> list[dict]:
     """Extract entities and their context from ``text``.
@@ -145,6 +149,11 @@ def extract(
     Returns a list of entity dicts (see ``DESIGN.md`` for the schema). If
     ``anchors`` is given, each entity is tagged with ``anchors_matched`` and,
     when ``anchor_mode="filter"``, only matched entities are returned.
+
+    When ``items=True`` (default), items of interest (phone, email, URL, money,
+    address) are detected and attached to each entity as ``associations`` with a
+    deterministic relatedness ``weight`` (>= ``min_weight``). Use
+    :func:`hobgoblin.item_index` to get the inverted, item-centric view.
     """
     nlp = load(model)
     doc = nlp(text)
@@ -191,17 +200,66 @@ def extract(
                 ],
                 "modifiers": _modifiers(head),
                 "context": context,
+                "associations": [],
                 "anchors_matched": [],
                 "part_of": None,
+                # internal: token coordinates for relatedness scoring (stripped below)
+                "_tok_start": chunk.start,
+                "_tok_end": chunk.end,
+                "_root_i": head.i,
             }
         )
 
     _link_overlaps(entities)
 
+    if items:
+        _attach_associations(doc, entities, min_weight)
+
+    for ent in entities:
+        del ent["_tok_start"], ent["_tok_end"], ent["_root_i"]
+
     if anchors is not None:
         entities = apply_anchors(entities, anchors, mode=anchor_mode, model=model)
 
     return entities
+
+
+def _attach_associations(doc, entities: list[dict], min_weight: float) -> None:
+    """Score every (entity, item) pair and attach those above ``min_weight``."""
+    found = detect_items(doc)
+    if not found:
+        return
+
+    # Drop "entities" whose head token sits inside an item (the entity *is* the
+    # item, e.g. a noun-chunk over an email address or street name).
+    def _head_in_item(e):
+        h = doc[e["_root_i"]].idx
+        return any(i["span"][0] <= h < i["span"][1] for i in found)
+
+    entities[:] = [e for e in entities if not _head_in_item(e)]
+
+    entity_spans = [e["span"] for e in entities]
+    for ent in entities:
+        e_s, e_e = ent["span"]
+        assoc = []
+        for item in found:
+            i_s, i_e = item["span"]
+            if i_s < e_e and e_s < i_e:
+                continue  # entity overlaps the item itself — not an association
+            weight, signals = relatedness(doc, ent, item, entity_spans)
+            if weight >= min_weight:
+                rec = {
+                    "type": item["type"],
+                    "text": item["text"],
+                    "span": item["span"],
+                    "weight": round(weight, 3),
+                    "signals": signals,
+                }
+                if "components" in item:
+                    rec["components"] = item["components"]
+                assoc.append(rec)
+        assoc.sort(key=lambda a: -a["weight"])
+        ent["associations"] = assoc
 
 
 def _link_overlaps(entities: list[dict]) -> None:

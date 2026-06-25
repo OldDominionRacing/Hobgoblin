@@ -27,17 +27,23 @@ python -m spacy download en_core_web_sm
 ## Usage
 
 ```python
-from hobgoblin import extract
+from hobgoblin import extract, item_index
 
 ents = extract("Last Tuesday, John bought three boxes of red apples.",
                anchors=["apple"])
 # -> list of entity dicts: head, char span, POS pattern, governing verb,
 #    count (three boxes of), dates, modifiers, anchors_matched, ...
+
+# Items of interest (phone/email/URL/money/address) get associated to entities
+# with a deterministic relatedness weight:
+ents  = extract("Call John Smith at 555-123-4567; his office is at 123 Main St.")
+items = item_index(ents)   # item-centric view: each item -> best_entity + ranked list
 ```
 
 ## Roadmap
 
 - [x] `hobgoblin.extract()` — entity + context extraction (spaCy POS/dependency)
+- [x] Items of interest + relatedness scoring (blended token/dependency distance)
 - [ ] Wizard escalation — LLM fallback when the goblin's confidence is low
 - [ ] TypeScript port (`compromise` / `wink-nlp`; shared JSON schema)
 - [ ] More primitives: `ocr()`, `classify()`, …
