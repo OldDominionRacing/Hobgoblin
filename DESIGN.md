@@ -253,31 +253,38 @@ so name detection leans on the **honorific** rule rather than NER here.
 
 ## Military unit designations
 
-A deterministic recognizer (`military.py`, exposed as `hobgoblin.detect_units`) for
-unit designations, which mix numbering systems:
+A deterministic recognizer (`military.py`, exposed as `hobgoblin.detect_units`) breaks
+a unit into three parts — **number · type · echelon**:
 
-| Form | Example | `designation` / `form` |
-|---|---|---|
-| cardinal | `3 Corps` | `3` / cardinal |
-| Roman | `I Corps`, `XVIII Airborne Corps` | `1`, `18` / roman |
-| ordinal | `1st Infantry Division`, `3rd Battalion` | `1`, `3` / ordinal |
-| letter | `C Company` | `"C"` / letter |
+| Example | number / form | type | echelon |
+|---|---|---|---|
+| `3 Corps` | `3` / cardinal | — | Corps |
+| `I Corps` | `1` / roman | — | Corps |
+| `1st Infantry Division` | `1` / ordinal | Infantry | Division |
+| `XVIII Airborne Corps` | `18` / roman | Airborne | Corps |
+| `3rd Special Troops Battalion` | `3` / ordinal | Special Troops | Battalion |
+| `C Company` | `"C"` / letter | — | Company |
+
+Number and echelon are the anchors; the **type** is any run of tokens between them —
+*not* a fixed vocabulary, so `Special Troops`, `Combat Aviation`, etc. are captured.
 
 **The trick:** anchor on a known **echelon** keyword (Corps/Division/Battalion/…).
-A number/letter/Roman token is only a designator when an echelon immediately follows
-(optionally through a branch like *Airborne*). That keeps `I Corps` (unit) distinct
-from `I went home` (pronoun), and `World War II` is never mistaken for a unit.
+A number token is only a unit number when an echelon follows, with the type in
+between. The type run excludes echelons and function words, so:
+- `I Corps` (unit) stays distinct from `I went home` (pronoun);
+- `3RD BRIGADE AND I CORPS` parses as **two** units, not one;
+- `5 soldiers from the division` matches **nothing** (the run breaks at "from", so no
+  echelon is adjacent), and `World War II` is never a unit.
 
 - Roman numerals are validated by round-trip (`XVIII` ✓, `IIII`/`VV` ✗).
 - **Ambiguity** resolved by echelon: a lone Roman letter before a *company-level*
-  echelon is a letter designation (`C Company` → letter `C`, not Roman 100).
+  echelon is a letter number (`C Company` → letter `C`, not Roman 100).
 - **Known limitation:** non-Roman letter companies (`A Company`, `B Company`) are not
-  matched, because a capitalized `A`/`B` before an echelon is ambiguous with the
-  article "A". Only Roman-letter companies fall out naturally.
+  matched, because a capitalized `A`/`B` before an echelon is ambiguous with "A".
 
 `extract()` annotates any entity whose head sits inside a detected unit with a
-`mil_unit` field (`echelon`, `branch`, `designation`, `designation_text`,
-`designation_form`); disable with `military=False`.
+`mil_unit` field (`number`, `number_text`, `number_form`, `type`, `echelon`) and grows
+the entity span to cover the full designation; disable with `military=False`.
 
 **Caveat — the echelon vocabulary is the whole engine.** Recognition is driven by a
 fixed, English/US-NATO-army-centric list (`DEFAULT_ECHELONS`). It will miss naval

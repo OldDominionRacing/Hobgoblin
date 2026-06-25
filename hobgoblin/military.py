@@ -1,21 +1,29 @@
 """Deterministic recognizer for military unit designations.
 
-Handles the common forms:
-    "3 Corps"                cardinal + echelon
-    "I Corps" / "V Corps"    Roman numeral + echelon
-    "XVIII Airborne Corps"   Roman + branch + echelon
-    "1st Infantry Division"  ordinal + branch + echelon
-    "3rd Battalion"          ordinal + echelon
-    "C Company"              letter designation (company-level)
+A unit designation has three parts — **number · type · echelon**:
 
-The key to staying deterministic without false positives is anchoring on a known
-**echelon** keyword: a number/letter/Roman token is only a unit designator when a
-recognized echelon immediately follows (optionally via a branch qualifier). That
-keeps "I Corps" (unit) distinct from "I went home" (pronoun).
+    1st  Infantry        Division
+    XVIII Airborne       Corps
+    3rd  Special Troops  Battalion
+    I                    Corps          (no type)
+    3                    Corps
+    C                    Company        (letter designation)
+     ^number  ^type      ^echelon
+
+Number and echelon are (almost) always present; the **type** is any run of tokens
+between them. We don't hard-code the type vocabulary — it's whatever content words
+sit between the number and the echelon.
+
+The matcher anchors on a known **echelon** keyword: a number/letter/Roman token is
+only a designation when an echelon follows, with the type in between. That keeps
+"I Corps" (unit) distinct from "I went home" (pronoun), and — because the type run
+excludes echelons and function words — stops "3RD BRIGADE AND I CORPS" from
+collapsing into one unit (it parses as two) and "5 SOLDIERS FROM THE DIVISION" from
+matching at all (the run breaks at "FROM", leaving no echelon adjacent).
 
 Known limitation: a lone Roman letter that is also a company letter is ambiguous
 ("C Company" — letter C, or Roman 100?). We resolve it by echelon: single letters
-before a company-level echelon are read as letter designations, otherwise Roman.
+before a company-level echelon are read as letters, otherwise Roman.
 """
 
 from __future__ import annotations
@@ -37,28 +45,27 @@ DEFAULT_ECHELONS = [
 DEFAULT_COMPANY_LEVEL = {"Company", "Battery", "Troop", "Platoon"}
 _ROMAN = {"I": 1, "V": 5, "X": 10, "L": 50, "C": 100, "D": 500, "M": 1000}
 
-# Branch qualifiers that can sit between a designator and its echelon. A fixed
-# vocabulary (not "any capitalized word") so the matcher can't run the branch
-# group across connectors/echelons, e.g. "3RD BRIGADE AND I CORPS".
-_BRANCHES = [
-    "Infantry", "Airborne", "Armored", "Armoured", "Cavalry", "Marine",
-    "Mountain", "Mechanized", "Motorized", "Artillery", "Aviation", "Engineer",
-    "Sustainment", "Ranger", "Naval", "Logistics", "Signal", "Medical",
-    "Military", "Air", "Assault", "Field", "Special", "Forces", "Airlift",
-    "Bombardment", "Fighter", "Reconnaissance", "Support", "Combat", "Heavy",
-    "Light", "Maneuver", "Security", "Police",
-]
+# Function words can't be part of a unit type — they bound the type run so it can't
+# straddle a clause ("5 soldiers FROM THE division" won't match).
+_FUNCTION_WORDS = (
+    "the|a|an|of|to|with|in|on|at|by|for|from|and|or|but|that|which|who|whose|"
+    "was|were|is|are|be|been|being|will|would|has|have|had|its|their|his|her|"
+    "this|these|those|as|into|near|over|under|after|before|during|per|then|than|"
+    "when|where|while|new|old|via"
+)
 
 
 def _build_regex(echelons):
     # Longest echelons first so multi-word ones win over their substrings.
     # IGNORECASE so ALL-CAPS traffic ("3RD BRIGADE", "I CORPS") still matches.
-    alts = "|".join(re.escape(e) for e in sorted(echelons, key=len, reverse=True))
-    branch = "|".join(_BRANCHES)
+    ech = "|".join(re.escape(e) for e in sorted(echelons, key=len, reverse=True))
+    # A type word: a content word that is neither an echelon nor a function word.
+    type_word = (r"(?!(?:" + ech + r")\b)(?!(?:" + _FUNCTION_WORDS
+                 + r")\b)[A-Za-z][A-Za-z'.\-]*")
     return re.compile(
-        r"\b(?P<desig>\d{1,3}(?:st|nd|rd|th)?|[IVXLCDM]{1,7})\s+"
-        r"(?P<branch>(?:(?:" + branch + r")\s+){0,3})"
-        r"(?P<echelon>" + alts + r")\b",
+        r"\b(?P<number>\d{1,3}(?:st|nd|rd|th)?|[IVXLCDM]{1,7})\s+"
+        r"(?P<type>(?:" + type_word + r"\s+){0,4})"
+        r"(?P<echelon>" + ech + r")\b",
         re.IGNORECASE,
     )
 
@@ -98,33 +105,34 @@ def _valid_roman(s: str) -> bool:
     return v is not None and _int_to_roman(v) == s.upper()
 
 
-def _parse_designation(text: str, echelon: str, company_lower) -> dict:
-    """Normalise a designator into a value + form, given its echelon."""
+def _parse_number(text: str, echelon: str, company_lower) -> dict:
+    """Normalise a unit number into a value + form, given its echelon."""
     t = text.strip()
     m = re.fullmatch(r"(\d{1,3})(?:st|nd|rd|th)", t, re.IGNORECASE)
     if m:
-        return {"designation": int(m.group(1)), "designation_form": "ordinal"}
+        return {"number": int(m.group(1)), "number_form": "ordinal"}
     if t.isdigit():
-        return {"designation": int(t), "designation_form": "cardinal"}
+        return {"number": int(t), "number_form": "cardinal"}
     # Single letter before a company-level echelon -> letter designation.
     if len(t) == 1 and t.isalpha() and echelon.lower() in company_lower:
-        return {"designation": t.upper(), "designation_form": "letter"}
+        return {"number": t.upper(), "number_form": "letter"}
     if _valid_roman(t):
-        return {"designation": _roman_to_int(t), "designation_form": "roman"}
+        return {"number": _roman_to_int(t), "number_form": "roman"}
     if len(t) == 1 and t.isalpha():
-        return {"designation": t, "designation_form": "letter"}
-    return {"designation": None, "designation_form": "unknown"}
+        return {"number": t.upper(), "number_form": "letter"}
+    return {"number": None, "number_form": "unknown"}
 
 
 def detect_units(text: str, echelons=None, company_level=None) -> list[dict]:
     """Find military unit designations in ``text``.
 
-    Each unit: ``text``, ``span`` (char), ``echelon``, ``branch`` (or None),
-    ``designation`` (normalised int/letter), ``designation_text``, ``designation_form``.
+    Each unit has the three parts ``number`` / ``type`` / ``echelon`` plus
+    ``number_text`` (raw), ``number_form`` (ordinal|cardinal|roman|letter),
+    ``text`` (full surface) and ``span`` (char offsets).
 
     ``echelons`` overrides the (English/US-army-centric) default vocabulary; pass
     your own list for other services or org charts. ``company_level`` is the subset
-    whose lone-letter designators are read as letters, not Roman numerals.
+    whose lone-letter numbers are read as letters, not Roman numerals.
     """
     regex = _DEFAULT_RE if echelons is None else _build_regex(echelons)
     ech_list = DEFAULT_ECHELONS if echelons is None else list(echelons)
@@ -134,19 +142,21 @@ def detect_units(text: str, echelons=None, company_level=None) -> list[dict]:
     units = []
     for m in regex.finditer(text):
         echelon_raw = m.group("echelon")
-        parsed = _parse_designation(m.group("desig"), echelon_raw, company_lower)
-        if parsed["designation_form"] == "unknown":
+        parsed = _parse_number(m.group("number"), echelon_raw, company_lower)
+        if parsed["number_form"] == "unknown":
             continue
-        branch = (m.group("branch") or "").strip() or None
         units.append({
             "text": m.group(0),
             "span": [m.start(), m.end()],
+            "number_text": m.group("number"),
+            "type": (m.group("type") or "").strip() or None,
             "echelon": canon.get(echelon_raw.lower(), echelon_raw),
-            "branch": branch,
-            "designation_text": m.group("desig"),
             **parsed,
         })
     return units
+
+
+_UNIT_FIELDS = ("number", "number_text", "number_form", "type", "echelon")
 
 
 def annotate(doc, entities: list[dict], echelons=None, text=None) -> None:
@@ -163,11 +173,7 @@ def annotate(doc, entities: list[dict], echelons=None, text=None) -> None:
         head_char = doc[ent["_root_i"]].idx
         for u in units:
             if u["span"][0] <= head_char < u["span"][1]:
-                ent["mil_unit"] = {
-                    k: u[k] for k in
-                    ("echelon", "branch", "designation",
-                     "designation_text", "designation_form")
-                }
+                ent["mil_unit"] = {k: u[k] for k in _UNIT_FIELDS}
                 # Grow the entity to cover the full designation (e.g. include the
                 # "XVIII" that spaCy's noun chunk left out of "Airborne Corps").
                 ns = min(ent["span"][0], u["span"][0])

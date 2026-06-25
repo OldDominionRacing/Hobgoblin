@@ -24,33 +24,47 @@ def _one(text):
     return units[0]
 
 
-def test_cardinal_designation():
+def test_cardinal_number():
     u = _one("3 Corps moved out.")
     assert u["echelon"] == "Corps"
-    assert u["designation"] == 3
-    assert u["designation_form"] == "cardinal"
+    assert u["number"] == 3
+    assert u["number_form"] == "cardinal"
+    assert u["type"] is None
 
 
-def test_roman_designation():
-    assert _one("I Corps held the line.")["designation"] == 1
-    assert _one("V Corps advanced.")["designation"] == 5
+def test_roman_number():
+    assert _one("I Corps held the line.")["number"] == 1
+    assert _one("V Corps advanced.")["number"] == 5
     u = _one("XVIII Airborne Corps deployed.")
-    assert u["designation"] == 18
-    assert u["branch"] == "Airborne"
+    assert u["number"] == 18
+    assert u["type"] == "Airborne"
+    assert u["echelon"] == "Corps"
 
 
-def test_ordinal_with_branch():
+def test_ordinal_with_type():
     u = _one("The 1st Infantry Division fought hard.")
-    assert u["designation"] == 1
-    assert u["designation_form"] == "ordinal"
-    assert u["branch"] == "Infantry"
+    assert u["number"] == 1
+    assert u["number_form"] == "ordinal"
+    assert u["type"] == "Infantry"
+
+
+def test_multi_token_type():
+    u = _one("The 3rd Special Troops Battalion arrived.")
+    assert u["number"] == 3
+    assert u["type"] == "Special Troops"
+    assert u["echelon"] == "Battalion"
 
 
 def test_letter_company():
     u = _one("C Company relieved the position.")
     assert u["echelon"] == "Company"
-    assert u["designation"] == "C"
-    assert u["designation_form"] == "letter"
+    assert u["number"] == "C"
+    assert u["number_form"] == "letter"
+
+
+def test_number_phrase_is_not_a_unit():
+    # a count of things that merely ends near an echelon must not match
+    assert detect_units("5 soldiers from the division") == []
 
 
 def test_pronoun_I_is_not_a_unit():

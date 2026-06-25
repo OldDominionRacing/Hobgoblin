@@ -120,7 +120,7 @@ function tipForEntity(e){
   const cats=(e.anchors_matched||[]);
   let t = "<b>Entity</b> · head: "+esc(e.head)+"<br>type: "+(cats.length?cats.join(", "):"untyped");
   if(e.mil_unit){ const m=e.mil_unit;
-    t += "<br>unit: "+esc(m.echelon)+" "+esc(""+m.designation)+" ("+m.designation_form+")"; }
+    t += "<br>unit: #"+esc(""+m.number)+(m.type?" "+esc(m.type):"")+" "+esc(m.echelon); }
   const n=(e.associations||[]).length;
   t += "<br>"+n+" associated item"+(n===1?"":"s");
   return t;
@@ -172,8 +172,10 @@ function renderPanel(e){
   if((e.anchors_matched||[]).length)
     h += field("categories", e.anchors_matched.map(a=>'<span class="tag">'+esc(a)+'</span>').join(""));
   if(e.mil_unit){ const m=e.mil_unit;
-    h += field("military unit", esc(m.echelon)+" #"+esc(""+m.designation)+" ("+m.designation_form+")"
-       + (m.branch? " · "+esc(m.branch):"")); }
+    h += field("military unit",
+        '<span class="tag">number '+esc(""+m.number)+' <span class="k">('+m.number_form+')</span></span>'
+      + (m.type? '<span class="tag">type '+esc(m.type)+'</span>':'')
+      + '<span class="tag">echelon '+esc(m.echelon)+'</span>'); }
   if(c.verb) h += field("governing verb", esc(c.verb.text)+' <span class="k">('+esc(c.verb.lemma)+')</span>');
   if(c.subject) h += field("subject", esc(c.subject.text));
   if(c.count){ const ct=c.count; let s="value "+ct.value;
