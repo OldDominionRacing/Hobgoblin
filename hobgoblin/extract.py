@@ -91,6 +91,45 @@ def _detect_approx(num):
     return text or left.text
 
 
+def _should_normalize(text: str, mode) -> bool:
+    """Whether to lowercase the text for spaCy. ``mode`` is True/False/"auto"."""
+    if mode is True:
+        return True
+    if mode is False:
+        return False
+    letters = [c for c in text if c.isalpha()]
+    if len(letters) < 8:
+        return False
+    return sum(c.isupper() for c in letters) / len(letters) >= 0.85
+
+
+def _resurface(node, src: str) -> None:
+    """Rewrite every surface string from ``src`` by its char span (recursively).
+
+    Lets us parse a lowercased copy for better tagging while keeping the output's
+    text faithful to the original casing — spans line up because lowercasing is
+    length-preserving.
+    """
+    if isinstance(node, list):
+        for x in node:
+            _resurface(x, src)
+    elif isinstance(node, dict):
+        sp = node.get("span")
+        if isinstance(sp, list) and len(sp) == 2:
+            if "text" in node:
+                node["text"] = src[sp[0]:sp[1]]
+            if "entity" in node:
+                node["entity"] = src[sp[0]:sp[1]]
+        ssp = node.get("sentence_span")
+        if isinstance(ssp, list) and len(ssp) == 2 and "sentence" in node:
+            node["sentence"] = src[ssp[0]:ssp[1]]
+        hs = node.get("_head_span")
+        if isinstance(hs, list) and len(hs) == 2:
+            node["head"] = src[hs[0]:hs[1]]
+        for v in node.values():
+            _resurface(v, src)
+
+
 def _span(token) -> list[int]:
     """Character offsets ``[start, end]`` for a single token."""
     return [token.idx, token.idx + len(token.text)]
@@ -243,6 +282,7 @@ def extract(
     min_weight: float = 0.1,
     military: bool = True,
     unit_echelons: Optional[Iterable[str]] = None,
+    normalize_case="auto",
     model: str = DEFAULT_MODEL,
 ) -> list[dict]:
     """Extract entities and their context from ``text``.
@@ -255,9 +295,16 @@ def extract(
     address) are detected and attached to each entity as ``associations`` with a
     deterministic relatedness ``weight`` (>= ``min_weight``). Use
     :func:`hobgoblin.item_index` to get the inverted, item-centric view.
+
+    ``normalize_case`` ("auto" by default) lowercases mostly-uppercase text before
+    spaCy — all-caps badly degrades tagging/chunking — while surface strings in the
+    output are sliced from the original, so casing is preserved. Pass True/False to
+    force it on/off.
     """
     nlp = load(model)
-    doc = nlp(text)
+    normalized = _should_normalize(text, normalize_case)
+    src = text
+    doc = nlp(text.lower() if normalized else text)
 
     # Per-sentence date cache (spaCy NER DATE / TIME).
     sent_dates: dict[int, list[dict]] = {}
@@ -307,10 +354,11 @@ def extract(
                 "mil_unit": None,
                 "anchors_matched": [],
                 "part_of": None,
-                # internal: token coordinates for relatedness scoring (stripped below)
+                # internal: token coordinates for scoring / resurfacing (stripped below)
                 "_tok_start": chunk.start,
                 "_tok_end": chunk.end,
                 "_root_i": head.i,
+                "_head_span": [head.idx, head.idx + len(head.text)],
             }
         )
 
@@ -320,10 +368,13 @@ def extract(
         _attach_associations(doc, entities, min_weight)
 
     if military:
-        annotate_units(doc, entities, echelons=unit_echelons)
+        annotate_units(doc, entities, echelons=unit_echelons, text=src)
+
+    if normalized:
+        _resurface(entities, src)
 
     for ent in entities:
-        del ent["_tok_start"], ent["_tok_end"], ent["_root_i"]
+        del ent["_tok_start"], ent["_tok_end"], ent["_root_i"], ent["_head_span"]
 
     if anchors is not None:
         entities = apply_anchors(entities, anchors, mode=anchor_mode, fuzzy=fuzzy)

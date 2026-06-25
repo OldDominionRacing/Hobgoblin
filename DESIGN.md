@@ -235,6 +235,22 @@ items = item_index(ents)         # [{type, text, span, entities[], best_entity},
 
 ---
 
+## ALL-CAPS text (cables, SITREPs, radio logs)
+
+All-caps input is doubly hostile: spaCy's tagger/chunker/NER degrade badly on it
+(`I CORPS` splits into `I` + `CORPS`; `12 HMMWV TRUCKS` is dropped), and case-sensitive
+regex misses `3RD BRIGADE`. Two mitigations:
+
+- **Deterministic recognizers are case-insensitive.** `detect_units` matches any case
+  (and canonicalizes the echelon spelling); anchor matching already lowercases.
+- **`normalize_case="auto"`** (default) lowercases mostly-uppercase text *before*
+  spaCy, recovering the lost structure. Because lowercasing is length-preserving, all
+  surface strings are sliced back from the **original** text, so output casing is
+  faithful. Force with `normalize_case=True/False`.
+
+Residual limit: spaCy `PERSON`/`GPE` NER still won't fire reliably on de-cased text,
+so name detection leans on the **honorific** rule rather than NER here.
+
 ## Military unit designations
 
 A deterministic recognizer (`military.py`, exposed as `hobgoblin.detect_units`) for

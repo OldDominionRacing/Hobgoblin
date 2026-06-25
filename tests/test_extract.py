@@ -127,6 +127,30 @@ def test_approximator_counts(text, qual):
     assert count["qualifier"] == qual
 
 
+def test_all_caps_recovers_entities_and_preserves_casing():
+    caps = "THE 3RD BRIGADE AND I CORPS MOVED 12 HMMWV TRUCKS."
+    heads = {e["head"] for e in extract(caps, items=False)}
+    # I CORPS / 12 HMMWV TRUCKS are lost without normalization; recovered with it
+    assert "CORPS" in heads
+    assert any("TRUCKS" in e["entity"] for e in extract(caps, items=False))
+    # surface text keeps original casing, not the lowercased copy spaCy parsed
+    assert any(e["entity"].isupper() for e in extract(caps, items=False))
+
+
+def test_all_caps_annotates_units():
+    ents = extract("I CORPS ADVANCED.", items=False)
+    corps = _by_head(ents, "CORPS")
+    assert corps["mil_unit"] and corps["mil_unit"]["echelon"] == "Corps"
+
+
+def test_normalize_case_can_be_disabled():
+    caps = "THE 3RD BRIGADE AND I CORPS MOVED."
+    off = {e["head"] for e in extract(caps, items=False, normalize_case=False)}
+    on = {e["head"] for e in extract(caps, items=False, normalize_case=True)}
+    # normalization recovers at least as many heads as leaving it off
+    assert len(on) >= len(off)
+
+
 def test_plain_count_has_no_range_or_approx():
     count = _by_head(extract("She has three cars.", items=False), "cars")["context"]["count"]
     assert "range" not in count

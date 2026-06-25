@@ -37,14 +37,29 @@ DEFAULT_ECHELONS = [
 DEFAULT_COMPANY_LEVEL = {"Company", "Battery", "Troop", "Platoon"}
 _ROMAN = {"I": 1, "V": 5, "X": 10, "L": 50, "C": 100, "D": 500, "M": 1000}
 
+# Branch qualifiers that can sit between a designator and its echelon. A fixed
+# vocabulary (not "any capitalized word") so the matcher can't run the branch
+# group across connectors/echelons, e.g. "3RD BRIGADE AND I CORPS".
+_BRANCHES = [
+    "Infantry", "Airborne", "Armored", "Armoured", "Cavalry", "Marine",
+    "Mountain", "Mechanized", "Motorized", "Artillery", "Aviation", "Engineer",
+    "Sustainment", "Ranger", "Naval", "Logistics", "Signal", "Medical",
+    "Military", "Air", "Assault", "Field", "Special", "Forces", "Airlift",
+    "Bombardment", "Fighter", "Reconnaissance", "Support", "Combat", "Heavy",
+    "Light", "Maneuver", "Security", "Police",
+]
+
 
 def _build_regex(echelons):
     # Longest echelons first so multi-word ones win over their substrings.
+    # IGNORECASE so ALL-CAPS traffic ("3RD BRIGADE", "I CORPS") still matches.
     alts = "|".join(re.escape(e) for e in sorted(echelons, key=len, reverse=True))
+    branch = "|".join(_BRANCHES)
     return re.compile(
         r"\b(?P<desig>\d{1,3}(?:st|nd|rd|th)?|[IVXLCDM]{1,7})\s+"
-        r"(?P<branch>(?:[A-Z][a-z]+\s+){0,3})"
-        r"(?P<echelon>" + alts + r")\b"
+        r"(?P<branch>(?:(?:" + branch + r")\s+){0,3})"
+        r"(?P<echelon>" + alts + r")\b",
+        re.IGNORECASE,
     )
 
 
@@ -83,17 +98,17 @@ def _valid_roman(s: str) -> bool:
     return v is not None and _int_to_roman(v) == s.upper()
 
 
-def _parse_designation(text: str, echelon: str, company_level) -> dict:
+def _parse_designation(text: str, echelon: str, company_lower) -> dict:
     """Normalise a designator into a value + form, given its echelon."""
     t = text.strip()
-    m = re.fullmatch(r"(\d{1,3})(?:st|nd|rd|th)", t)
+    m = re.fullmatch(r"(\d{1,3})(?:st|nd|rd|th)", t, re.IGNORECASE)
     if m:
         return {"designation": int(m.group(1)), "designation_form": "ordinal"}
     if t.isdigit():
         return {"designation": int(t), "designation_form": "cardinal"}
     # Single letter before a company-level echelon -> letter designation.
-    if len(t) == 1 and t.isalpha() and echelon in company_level:
-        return {"designation": t, "designation_form": "letter"}
+    if len(t) == 1 and t.isalpha() and echelon.lower() in company_lower:
+        return {"designation": t.upper(), "designation_form": "letter"}
     if _valid_roman(t):
         return {"designation": _roman_to_int(t), "designation_form": "roman"}
     if len(t) == 1 and t.isalpha():
@@ -112,18 +127,21 @@ def detect_units(text: str, echelons=None, company_level=None) -> list[dict]:
     whose lone-letter designators are read as letters, not Roman numerals.
     """
     regex = _DEFAULT_RE if echelons is None else _build_regex(echelons)
+    ech_list = DEFAULT_ECHELONS if echelons is None else list(echelons)
+    canon = {e.lower(): e for e in ech_list}  # canonical spelling per echelon
     company = DEFAULT_COMPANY_LEVEL if company_level is None else set(company_level)
+    company_lower = {c.lower() for c in company}
     units = []
     for m in regex.finditer(text):
-        echelon = m.group("echelon")
-        parsed = _parse_designation(m.group("desig"), echelon, company)
+        echelon_raw = m.group("echelon")
+        parsed = _parse_designation(m.group("desig"), echelon_raw, company_lower)
         if parsed["designation_form"] == "unknown":
             continue
         branch = (m.group("branch") or "").strip() or None
         units.append({
             "text": m.group(0),
             "span": [m.start(), m.end()],
-            "echelon": echelon,
+            "echelon": canon.get(echelon_raw.lower(), echelon_raw),
             "branch": branch,
             "designation_text": m.group("desig"),
             **parsed,
@@ -131,9 +149,13 @@ def detect_units(text: str, echelons=None, company_level=None) -> list[dict]:
     return units
 
 
-def annotate(doc, entities: list[dict], echelons=None) -> None:
-    """Attach ``mil_unit`` to any entity whose head sits inside a detected unit."""
-    units = detect_units(doc.text, echelons=echelons)
+def annotate(doc, entities: list[dict], echelons=None, text=None) -> None:
+    """Attach ``mil_unit`` to any entity whose head sits inside a detected unit.
+
+    ``text`` overrides ``doc.text`` for detection (offsets must align) so units are
+    recognized on the original casing even when the doc was lowercased for tagging.
+    """
+    units = detect_units(text if text is not None else doc.text, echelons=echelons)
     if not units:
         return
     for ent in entities:

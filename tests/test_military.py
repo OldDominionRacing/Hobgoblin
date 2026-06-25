@@ -80,6 +80,16 @@ def test_military_can_be_disabled():
     assert all(e["mil_unit"] is None for e in ents)
 
 
+def test_case_insensitive_detection():
+    # ALL-CAPS and lowercase both work; two separate units, not one.
+    for text in ("3RD BRIGADE AND I CORPS", "3rd brigade and i corps"):
+        units = detect_units(text)
+        echs = sorted(u["echelon"] for u in units)
+        assert echs == ["Brigade", "Corps"]
+    # echelon is canonicalized to its pack spelling regardless of input case
+    assert detect_units("I CORPS")[0]["echelon"] == "Corps"
+
+
 def test_custom_echelons_override():
     text = "3rd Flotilla and 7th Squadron sailed."
     # default vocabulary doesn't know "Flotilla"
