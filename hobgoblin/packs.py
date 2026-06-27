@@ -14,7 +14,7 @@ corpus. Abbreviations are upper-case so they match exactly (no fuzzy collisions)
 spelled-out words match fuzzily, so most typos are caught without listing them all.
 """
 
-from .anchors import NAME, PLACE
+from .anchors import NAME, PLACE, ORG, GROUP, EVENT, PRODUCT, WORK
 
 # Deterministic gazetteers — a backstop to spaCy's GPE/LOC NER (which degrades on
 # all-caps / de-cased text). Full names only: 2-letter abbreviations like "OR"/"IN"
@@ -75,4 +75,10 @@ ANCHORS = {
     "name": NAME,
     # NER GPE/LOC rule first (cities + anything spaCy tags), gazetteer as backstop.
     "place": [PLACE] + COUNTRIES + US_STATES,
+    # General-purpose scopes, free via spaCy NER (no word lists needed).
+    "organization": [ORG],
+    "group": [GROUP],
+    "event": [EVENT],
+    "product": [PRODUCT],
+    "work": [WORK],
 }

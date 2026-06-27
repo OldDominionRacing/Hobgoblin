@@ -117,6 +117,16 @@ def test_place_gazetteer_backstops_all_caps():
     assert any("FRANCE" in p for p in placed)
 
 
+def test_ner_scopes_fire():
+    # org / group / event scopes are free spaCy-NER rules
+    ents = extract("Microsoft and the United Nations met. Americans studied World War II.",
+                   anchors=ANCHORS)
+    cats = {c for e in ents for c in e["anchors_matched"]}
+    assert "organization" in cats
+    assert "group" in cats        # NORP -> Americans
+    assert "event" in cats        # EVENT -> World War II
+
+
 def test_capitalized_unit_not_flagged_as_name():
     # a capitalized misspelled unit must NOT be tagged a name
     ents = extract("The 3rd Brigdae and B Battery advanced.", anchors=ANCHORS)

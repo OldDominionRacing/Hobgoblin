@@ -23,9 +23,16 @@ from typing import Iterable, Union
 
 from .match import term_matches
 
-# Sentinels: a category can match by *rule* instead of a word list.
-NAME = "@name"    # person names (spaCy PERSON, or an honorific in the chunk)
-PLACE = "@place"  # countries/states/cities (spaCy GPE/LOC)
+# Sentinels: a category can match by *rule* instead of a word list. NAME/PLACE use
+# custom logic; the rest are thin wrappers over a spaCy NER label (free — NER already
+# runs during extract). Add a new scope by mapping a sentinel to a label in _RULES.
+NAME = "@name"        # person names (spaCy PERSON, or an honorific in the chunk)
+PLACE = "@place"      # countries/states/cities (spaCy GPE/LOC)
+ORG = "@org"          # organizations, companies, agencies (spaCy ORG)
+GROUP = "@group"      # nationalities / religious / political groups (spaCy NORP)
+EVENT = "@event"      # named events, wars, sports events (spaCy EVENT)
+PRODUCT = "@product"  # products, vehicles, devices (spaCy PRODUCT)
+WORK = "@work"        # titles of books, songs, films, art (spaCy WORK_OF_ART)
 
 # Honorifics are a strong, deterministic person-name cue (without relying on a name
 # list). Title-case alone is too ambiguous — it flags places and capitalized units.
@@ -52,6 +59,11 @@ def _looks_like_place(ent: dict) -> bool:
     return ent.get("head_ent") in _PLACE_ENTS
 
 
+def _ner_rule(label: str):
+    """A scope predicate: the entity's head carries this spaCy NER label."""
+    return lambda ent: ent.get("head_ent") == label
+
+
 def _term_hits(term: str, texts: list[str], lemmas: list[str], fuzzy: bool) -> bool:
     """Match a (possibly multi-word) term against an entity's token sequence.
 
@@ -70,7 +82,15 @@ def _term_hits(term: str, texts: list[str], lemmas: list[str], fuzzy: bool) -> b
 
 
 # Rule sentinels -> predicate. A category may include any of these alongside terms.
-_RULES = {NAME: _looks_like_name, PLACE: _looks_like_place}
+_RULES = {
+    NAME: _looks_like_name,
+    PLACE: _looks_like_place,
+    ORG: _ner_rule("ORG"),
+    GROUP: _ner_rule("NORP"),
+    EVENT: _ner_rule("EVENT"),
+    PRODUCT: _ner_rule("PRODUCT"),
+    WORK: _ner_rule("WORK_OF_ART"),
+}
 
 
 def _normalize(anchors: AnchorSpec):

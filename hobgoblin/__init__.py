@@ -5,7 +5,7 @@ context extractor. See ``DESIGN.md`` for the full design.
 """
 
 from .extract import extract
-from .anchors import apply_anchors, NAME, PLACE
+from .anchors import apply_anchors, NAME, PLACE, ORG, GROUP, EVENT, PRODUCT, WORK
 from .associate import item_index
 from .items import detect as detect_items
 from .military import detect_units
@@ -14,6 +14,6 @@ from . import wizard
 
 __all__ = [
     "extract", "apply_anchors", "item_index", "detect_items", "detect_units",
-    "NAME", "PLACE", "ANCHORS", "wizard",
+    "NAME", "PLACE", "ORG", "GROUP", "EVENT", "PRODUCT", "WORK", "ANCHORS", "wizard",
 ]
 __version__ = "0.1.0"

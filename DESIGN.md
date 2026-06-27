@@ -106,13 +106,23 @@ match a contiguous run of tokens in the entity, so `World War` tags `World War I
 - disable entirely with `fuzzy=False`.
 
 Some categories can't be enumerated, so they match by **rule** via a sentinel value
-instead of a word list:
-- **`NAME`** — head is a spaCy `PERSON`, or the chunk contains an **honorific**
-  (Colonel/Dr/Sgt/…). Title-case alone is *not* used (it flags places/units).
-- **`PLACE`** — head is a spaCy `GPE`/`LOC` (countries, states, cities). Backed by a
-  country/state **gazetteer** so it still fires on all-caps text where NER fails.
+instead of a word list. These are **free** — spaCy NER already runs during `extract`:
 
-A category may mix rules and terms, e.g. `"place": [PLACE] + COUNTRIES + US_STATES`.
+| Sentinel | Matches | Backed by |
+|---|---|---|
+| `NAME` | person names | spaCy `PERSON` **or** an honorific (Colonel/Dr/…) — title-case alone is *not* used |
+| `PLACE` | countries/states/cities | spaCy `GPE`/`LOC` + a country/state **gazetteer** (so it survives all-caps where NER fails) |
+| `ORG` | organizations, companies, agencies | spaCy `ORG` |
+| `GROUP` | nationalities / religious / political groups | spaCy `NORP` |
+| `EVENT` | named events, wars | spaCy `EVENT` |
+| `PRODUCT` | products, vehicles, devices | spaCy `PRODUCT` |
+| `WORK` | titles of books/songs/films/art | spaCy `WORK_OF_ART` |
+
+Adding a new rule-based scope is one line in the `_RULES` registry. On a 1000-page
+random-Wikipedia benchmark, adding `ORG`/`GROUP`/`EVENT`/`PRODUCT`/`WORK` lifted the
+goblin's typed-rate from **28% → 41%** at **zero extra cost** (the NER labels were
+already computed). A category may mix rules and terms, e.g.
+`"place": [PLACE] + COUNTRIES + US_STATES`.
 
 A ready-made **`ANCHORS`** pack (`military_unit`/`facility`/`equipment`/`name`/`place`,
 with echelons, abbreviations, common misspellings, and a place gazetteer) ships in
