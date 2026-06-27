@@ -25,6 +25,7 @@ calling the model.
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -158,12 +159,20 @@ def claude_code_llm(model: str = "opus", *, command: str = "claude",
         from hobgoblin import wizard, ANCHORS
         out = wizard.suggest_anchors(text, anchors=ANCHORS, llm=wizard.claude_code_llm())
     """
-    if shutil.which(command) is None:
+    # Resolve the binary even when ~/.local/bin isn't on PATH (a common shell setup).
+    binary = (shutil.which(command)
+              or os.environ.get("CLAUDE_BIN")
+              or next((p for p in (os.path.expanduser(f"~/.local/bin/{command}"),
+                                   f"/usr/local/bin/{command}",
+                                   f"/opt/homebrew/bin/{command}")
+                       if os.path.exists(p)), None))
+    if binary is None:
         raise FileNotFoundError(
-            f"{command!r} not found on PATH — install Claude Code, or pass command=")
+            f"{command!r} not found on PATH or ~/.local/bin — install Claude Code, "
+            f"set CLAUDE_BIN, or pass command=")
 
     def call(prompt: str) -> str:
-        cmd = [command, "-p", "--output-format", "text", "--no-session-persistence"]
+        cmd = [binary, "-p", "--output-format", "text", "--no-session-persistence"]
         if model:
             cmd += ["--model", model]
         proc = subprocess.run(

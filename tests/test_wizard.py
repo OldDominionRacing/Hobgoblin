@@ -95,7 +95,8 @@ def test_claude_code_llm_builds_headless_command(monkeypatch):
     monkeypatch.setattr(w.subprocess, "run", fake_run)
     llm = w.claude_code_llm(model="opus")
     assert llm("hello") == '{"corrections": []}'
-    assert captured["cmd"][:2] == ["claude", "-p"]
+    assert captured["cmd"][0] == "/usr/bin/claude"  # resolved binary
+    assert captured["cmd"][1] == "-p"
     assert "--model" in captured["cmd"] and "opus" in captured["cmd"]
     assert "--no-session-persistence" in captured["cmd"]
     assert captured["input"] == "hello"
@@ -105,8 +106,9 @@ def test_claude_code_llm_missing_binary(monkeypatch):
     import hobgoblin.wizard as w
 
     monkeypatch.setattr(w.shutil, "which", lambda c: None)
+    monkeypatch.delenv("CLAUDE_BIN", raising=False)
     with pytest.raises(FileNotFoundError):
-        w.claude_code_llm(command="definitely-not-a-real-cli")
+        w.claude_code_llm(command="definitely-not-a-real-cli-xyz")
 
 
 def test_fix_reuses_passed_entities():
