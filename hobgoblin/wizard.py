@@ -26,6 +26,9 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
+import subprocess
+import tempfile
 from typing import Callable, Optional
 
 from .extract import extract
@@ -137,6 +140,42 @@ def _anthropic_llm(model: str) -> Callable[[str], str]:
             messages=[{"role": "user", "content": prompt}],
         )
         return "".join(b.text for b in resp.content if b.type == "text")
+
+    return call
+
+
+def claude_code_llm(model: str = "opus", *, command: str = "claude",
+                    timeout: int = 240, cwd: Optional[str] = None) -> Callable[[str], str]:
+    """An ``llm=`` adapter that shells out to the Claude Code CLI (``claude -p``).
+
+    Runs the wizard under your **Claude Code auth** (e.g. a Max subscription) instead
+    of a pay-as-you-go API key — no ``ANTHROPIC_API_KEY`` needed. Requires ``claude``
+    on PATH and an authenticated Claude Code: run it in a terminal where you're logged
+    in, or set a headless token with ``claude setup-token`` (exports
+    ``CLAUDE_CODE_OAUTH_TOKEN``). Runs in a temp dir so project ``CLAUDE.md`` / hooks
+    don't bleed into the prompt.
+
+        from hobgoblin import wizard, ANCHORS
+        out = wizard.suggest_anchors(text, anchors=ANCHORS, llm=wizard.claude_code_llm())
+    """
+    if shutil.which(command) is None:
+        raise FileNotFoundError(
+            f"{command!r} not found on PATH — install Claude Code, or pass command=")
+
+    def call(prompt: str) -> str:
+        cmd = [command, "-p", "--output-format", "text", "--no-session-persistence"]
+        if model:
+            cmd += ["--model", model]
+        proc = subprocess.run(
+            cmd, input=prompt, capture_output=True, text=True,
+            timeout=timeout, cwd=cwd or tempfile.gettempdir())
+        out = (proc.stdout or "").strip()
+        if proc.returncode != 0 or not out:
+            raise RuntimeError(
+                f"claude CLI failed (exit {proc.returncode}). "
+                f"Are you logged in (`claude` once, or `claude setup-token`)? "
+                f"stderr: {(proc.stderr or out)[:300]}")
+        return out
 
     return call
 

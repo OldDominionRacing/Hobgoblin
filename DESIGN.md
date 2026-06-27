@@ -336,12 +336,16 @@ Two jobs:
   (drop junk like a mis-parsed `"I"`, merge a split `World War I`, retype, add a
   missed entity).
 
-Two ways to wire the model, both supported:
+Three ways to wire the model:
 - **Bring your own:** `llm=callable(prompt: str) -> str` (any model/SDK). This is
   also how an agent that already knows Hobgoblin would use it — run `extract` cheap,
   then hand these prompts to whatever model it's already driving.
-- **Anthropic default:** `pip install hobgoblin[llm]` + `ANTHROPIC_API_KEY`; with no
-  `llm` we call Claude (`claude-opus-4-8`).
+- **Claude Code CLI (no API key):** `llm=wizard.claude_code_llm()` shells out to
+  `claude -p`, so the LLM runs under your **Claude Code auth** (e.g. a Max plan)
+  instead of pay-as-you-go API credits. Needs `claude` on PATH and an authenticated
+  Claude Code (a terminal you've logged into, or `claude setup-token`).
+- **Anthropic API default:** `pip install hobgoblin[llm]` + `ANTHROPIC_API_KEY`; with
+  no `llm` we call Claude (`claude-opus-4-8`).
 
 Every prompt is **inspectable before you spend a token**: call `build_anchor_prompt`
 / `build_fix_prompt`, or pass `dry_run=True` to get the exact prompt back instead of

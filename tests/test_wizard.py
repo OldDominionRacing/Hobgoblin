@@ -76,6 +76,39 @@ def test_fix_with_fake_llm():
     assert res["corrections"][0]["entity"] == "It"
 
 
+def test_claude_code_llm_builds_headless_command(monkeypatch):
+    import hobgoblin.wizard as w
+
+    monkeypatch.setattr(w.shutil, "which", lambda c: "/usr/bin/claude")
+    captured = {}
+
+    class _Result:
+        returncode = 0
+        stdout = '{"corrections": []}'
+        stderr = ""
+
+    def fake_run(cmd, **kw):
+        captured["cmd"] = cmd
+        captured["input"] = kw.get("input")
+        return _Result()
+
+    monkeypatch.setattr(w.subprocess, "run", fake_run)
+    llm = w.claude_code_llm(model="opus")
+    assert llm("hello") == '{"corrections": []}'
+    assert captured["cmd"][:2] == ["claude", "-p"]
+    assert "--model" in captured["cmd"] and "opus" in captured["cmd"]
+    assert "--no-session-persistence" in captured["cmd"]
+    assert captured["input"] == "hello"
+
+
+def test_claude_code_llm_missing_binary(monkeypatch):
+    import hobgoblin.wizard as w
+
+    monkeypatch.setattr(w.shutil, "which", lambda c: None)
+    with pytest.raises(FileNotFoundError):
+        w.claude_code_llm(command="definitely-not-a-real-cli")
+
+
 def test_fix_reuses_passed_entities():
     # passing entities avoids re-running extract; a fake llm echoes empty corrections
     ents = __import__("hobgoblin").extract(TEXT)
