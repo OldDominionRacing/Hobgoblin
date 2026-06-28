@@ -36,13 +36,16 @@ BATCH = 20
 UA = "Hobgoblin-benchmark/0.1 (github.com/OldDominionRacing/Hobgoblin)"
 JUDGE = wizard.claude_code_llm(model="opus")  # runs under Claude Code / Max auth
 
-COLUMNS = ["title", "ents", "typed", "drops", "adds", "retypes"]
+COLUMNS = ["title", "ents", "typed", "drops", "adds", "mistypes", "type_sugg"]
 HEADER = f"""# Hobgoblin quality eval — goblin error rates judged by an LLM (the wizard)
 
-One row per page. The judge is `wizard.fix()` (LLM); its corrections are the errors:
-`drops` = false positives, `adds` = missed entities, `retypes` = wrong type.
+One row per page. The judge is `wizard.fix()` (LLM). Corrections are split by what
+they target so typing error isn't conflated with coverage:
+`drops` = false positives · `adds` = missed entities · `mistypes` = retype of an
+entity the goblin had *typed* (a real typing error) · `type_sugg` = retype of an
+*untyped* entity (the wizard suggesting a label — a coverage gain, not an error).
 Total later: precision ~= 1-drops/ents · recall ~= ents/(ents+adds) ·
-typing-accuracy ~= 1-retypes/typed.
+typing-accuracy ~= 1-mistypes/typed.
 
 | {" | ".join(COLUMNS)} |
 | {" | ".join("---" for _ in COLUMNS)} |
@@ -101,6 +104,16 @@ def main():
                 log(f"skip {title!r}: {exc!r}")
                 time.sleep(2)
                 continue
+            # Split retypes: was the corrected entity one the goblin actually TYPED?
+            typed_texts = {e["entity"].lower() for e in ents if e["anchors_matched"]}
+            mistypes = type_sugg = 0
+            for c in corr:
+                if c.get("action") != "retype":
+                    continue
+                if (c.get("entity") or "").lower().strip() in typed_texts:
+                    mistypes += 1          # real typing error on a typed entity
+                else:
+                    type_sugg += 1         # labeling a previously-untyped entity
             acts = [c.get("action") for c in corr]
             m = {
                 "title": title.replace("|", "/").replace("\n", " ").strip(),
@@ -108,12 +121,17 @@ def main():
                 "typed": sum(1 for e in ents if e["anchors_matched"]),
                 "drops": acts.count("drop"),
                 "adds": acts.count("add"),
-                "retypes": acts.count("retype"),
+                "mistypes": mistypes,
+                "type_sugg": type_sugg,
             }
             open(MD, "a").write("| " + " | ".join(str(m[c]) for c in COLUMNS) + " |\n")
+            # keep the raw corrections for inspection (gitignored)
+            with open(os.path.join(HERE, "QUALITY_corrections.jsonl"), "a") as cf:
+                cf.write(json.dumps({"title": m["title"], "corrections": corr}) + "\n")
             seen.add(title)
             done += 1
-            log(f"{done}/{TARGET}: {title!r} drops={m['drops']} adds={m['adds']} retypes={m['retypes']}")
+            log(f"{done}/{TARGET}: {title!r} drops={m['drops']} adds={m['adds']} "
+                f"mistypes={m['mistypes']} type_sugg={m['type_sugg']}")
         time.sleep(0.5)
     log(f"=== done: {done} rows ===")
 
