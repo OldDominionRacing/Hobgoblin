@@ -370,6 +370,11 @@ def extract(
 
     _link_overlaps(entities)
 
+    # Tag anchors BEFORE demotion so an anchor match can ELEVATE a would-be element
+    # (e.g. "9 mi", "north-east") back to a full entity — anchors define what counts.
+    if anchors is not None:
+        apply_anchors(entities, anchors, mode="flag", fuzzy=fuzzy)
+
     if items:
         _attach_associations(doc, entities, min_weight, _paragraphs(src))
 
@@ -382,8 +387,8 @@ def extract(
     for ent in entities:
         del ent["_tok_start"], ent["_tok_end"], ent["_root_i"], ent["_head_span"]
 
-    if anchors is not None:
-        entities = apply_anchors(entities, anchors, mode=anchor_mode, fuzzy=fuzzy)
+    if anchors is not None and anchor_mode == "filter":
+        entities = [e for e in entities if e["anchors_matched"]]
 
     return entities
 
@@ -394,13 +399,15 @@ def _attach_associations(doc, entities: list[dict], min_weight: float, paras=Non
     if not found:
         return
 
-    # Drop "entities" whose head token sits inside an item (the entity *is* the
-    # item, e.g. a noun-chunk over an email address or street name).
+    # Demote "entities" whose head sits inside an item (the entity *is* the item —
+    # an email, a street name, a bare measurement, a direction). But ELEVATE back any
+    # the user anchored on: an anchor match means they explicitly want it as an entity.
     def _head_in_item(e):
         h = doc[e["_root_i"]].idx
         return any(i["span"][0] <= h < i["span"][1] for i in found)
 
-    entities[:] = [e for e in entities if not _head_in_item(e)]
+    entities[:] = [e for e in entities
+                   if e.get("anchors_matched") or not _head_in_item(e)]
 
     entity_spans = [e["span"] for e in entities]
     for ent in entities:

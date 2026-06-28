@@ -211,8 +211,17 @@ deterministically.
 ### Detection (deterministic)
 
 Types: `email`, `url`, `uuid`, `mac`, `ipv6`, `ipv4`, `coordinate`, `date`,
-`credit_card`, `ssn`, `phone`, `address`, `money`, `percent`, `time`, `handle`,
-`hashtag`, `file_path`, `zip`.
+`credit_card`, `ssn`, `phone`, `address`, `money`, `percent`, `measurement`,
+`time`, `handle`, `hashtag`, `file_path`, `zip`, `direction`.
+
+**Items vs entities — and elevation.** Some spans are *elements*, not entities: a bare
+`9 mi` (measurement) or `north-east` (direction) is information *about* a nearby
+entity, not an entity itself. So when an item's span covers a candidate entity's head,
+the entity is **demoted** out of the entity list and kept only as an associated item.
+**But anchors win:** if the user anchored that span (e.g. a `distance` category with
+`"km"`), the anchor match **elevates it back to a full entity** — anchors are the
+user's definition of what counts. (Same rule that drops a noun-chunk over an email or
+street name.)
 
 - **regex + spaCy token alignment** for most types, matched in **priority order**
   (precise patterns first) with a claimed-range pass so they don't overlap.

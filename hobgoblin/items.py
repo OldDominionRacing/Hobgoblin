@@ -73,12 +73,24 @@ _PATTERNS = [
         r"(?:,?\s+[A-Z][A-Za-z]+)*(?:,?\s+[A-Z]{2})?(?:\s+\d{5}(?:-\d{4})?)?"), None),
     ("money", re.compile(r"\$\s?\d[\d,]*(?:\.\d+)?"), None),
     ("percent", re.compile(r"\b\d+(?:\.\d+)?\s?%"), None),
+    # measurement: a number + a distance/weight/speed unit ("9 mi", "23 km", "5 kg").
+    # These are *elements*, not entities — the head-in-item drop demotes the chunk.
+    ("measurement", re.compile(
+        r"\b\d[\d,]*(?:\.\d+)?\s?(?:mi|km|cm|mm|ft|yd|mph|kph|kg|lb|lbs|oz|ha|"
+        r"miles?|kilomet(?:er|re)s?|met(?:er|re)s?|feet|foot|inch(?:es)?|yards?|"
+        r"pounds?|kilograms?|grams?|tonnes?|tons?|acres?|hectares?)\b", re.I), None),
     ("time", re.compile(r"\b\d{1,2}:\d{2}(?::\d{2})?\s?(?:[AaPp]\.?[Mm]\.?)?\b"), None),
     ("handle", re.compile(r"(?<!\w)@\w{2,}"), None),
     ("hashtag", re.compile(r"(?<!\w)#\w{2,}"), None),
     ("file_path", re.compile(
         r"[A-Za-z]:\\[\w\\.\- ]+|(?:/[\w.\-]+){2,}/?"), None),
     ("zip", re.compile(r"\b\d{5}(?:-\d{4})?\b"), None),
+    # direction: compass directions are spatial *elements*, not entities (lowest
+    # priority — common words; an anchor match elevates one back to an entity).
+    ("direction", re.compile(
+        r"\b(?:north-?east|north-?west|south-?east|south-?west|"
+        r"north|south|east|west|northbound|southbound|eastbound|westbound)\b", re.I),
+        None),
 ]
 
 # spaCy NER labels mapped to item types (filled in after the regex pass so

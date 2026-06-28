@@ -67,6 +67,28 @@ def test_social_and_geo_types():
     assert {"handle", "hashtag", "coordinate"} <= labels
 
 
+def test_measurement_and_direction_elements():
+    found = _types("Sianów lies 9 mi east of Koszalin, 23 km north-east.")
+    labels = {t for t, _ in found}
+    assert "measurement" in labels   # 9 mi / 23 km
+    assert "direction" in labels     # east / north-east
+
+
+def test_measurement_demoted_from_entities():
+    from hobgoblin import extract, item_index, ANCHORS
+    ents = extract("The course measured 9 km today.", anchors=ANCHORS)
+    assert "9 km" not in {e["entity"] for e in ents}          # demoted to an element
+    assert any(i["type"] == "measurement" for i in item_index(ents))
+
+
+def test_anchor_elevates_demoted_element():
+    from hobgoblin import extract, ANCHORS
+    anc = dict(ANCHORS, distance=["km"])
+    ents = extract("The course measured 9 km today.", anchors=anc)
+    elevated = [e for e in ents if "distance" in e["anchors_matched"]]
+    assert elevated and elevated[0]["entity"] == "9 km"       # anchor brings it back
+
+
 def test_invalid_ip_not_detected():
     found = _types("bad ip 999.1.1.1 here")
     assert not any(t == "ipv4" for t, _ in found)
