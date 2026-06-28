@@ -1025,7 +1025,7 @@ Columns:
 | item association | 6,391 (25.6%) |
 | free structured-output tokens | 5,907,712 verbose · 678,579 compact |
 
-### Before / after (same 1000-page protocol, vs )
+### Before / after (same 1000-page protocol, vs `BENCHMARK_military_baseline.md`)
 | | military pack | expanded pack |
 |---|---|---|
 | typed-rate | 28.2% | **39.2%** (+11.0 pts) |
