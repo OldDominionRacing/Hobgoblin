@@ -36,24 +36,31 @@ def osa_distance(a: str, b: str, max_dist: int | None = None) -> int:
 
 
 def _threshold(n: int) -> int:
-    """Conservative edit budget for a term of length ``n``."""
+    """Length-scaled edit budget for a term of length ``n``."""
     if n <= 3:
         return 0
     if n <= 6:
         return 1
-    if n <= 9:
-        return 2
-    return 3
+    return 2
 
 
 def term_matches(term: str, token: str, fuzzy: bool = True) -> bool:
-    """True if ``token`` matches ``term`` exactly, or fuzzily when allowed."""
+    """True if ``token`` matches ``term`` exactly, or fuzzily when allowed.
+
+    Fuzzy matching is deliberately conservative: exact-only for abbreviations and
+    very short terms, a length-scaled edit budget, and the **first and last letters
+    must agree**. The boundary check kills cross-word collisions like "butter"≈
+    "battery" or "Reaction"≈"section" while keeping real internal typos
+    ("brigdae"→brigade, "batallion"→battalion).
+    """
     t, k = term.lower(), token.lower()
     if t == k:
         return True
     if not fuzzy:
         return False
     if term.isupper() or len(t) <= 3:  # abbreviations / very short -> exact only
+        return False
+    if t[0] != k[0] or t[-1] != k[-1]:  # typos rarely change the word boundaries
         return False
     thr = _threshold(len(t))
     if abs(len(t) - len(k)) > thr:

@@ -38,6 +38,15 @@ def test_term_matches_policy():
     assert not term_matches("brigade", "brigdae", fuzzy=False)
 
 
+def test_fuzzy_no_cross_word_collisions():
+    # the benchmark found these false positives; the boundary guard kills them
+    assert not term_matches("battery", "butter")
+    assert not term_matches("section", "reaction")
+    # ...while still catching genuine internal typos
+    assert term_matches("battalion", "batallion")
+    assert term_matches("regiment", "regimnet")
+
+
 # --- flat list (back-compat) ----------------------------------------------
 def test_flat_list_reports_terms():
     ents = extract("She bought red apples.", anchors=["apple"])

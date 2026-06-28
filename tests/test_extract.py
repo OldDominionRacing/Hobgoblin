@@ -151,6 +151,22 @@ def test_normalize_case_can_be_disabled():
     assert len(on) >= len(off)
 
 
+def test_drop_generic_precision_mode():
+    text = "The film featured great actors. Microsoft and John Smith attended."
+    default = {e["head"] for e in extract(text)}
+    assert "film" in default and "actors" in default          # kept by default
+    precise = {e["head"] for e in extract(text, drop_generic=True)}
+    assert "film" not in precise and "actors" not in precise   # generic dropped
+    assert "Microsoft" in precise and "Smith" in precise       # proper nouns kept
+
+
+def test_drop_generic_keeps_anchored():
+    # an anchored common noun is elevated even in precision mode
+    ents = extract("The depot was secure.", anchors={"facility": ["depot"]},
+                   drop_generic=True)
+    assert any(e["head"] == "depot" for e in ents)
+
+
 def test_drops_stopword_entities():
     heads = {e["head"] for e in extract("It moved. The brigade advanced.")}
     assert "It" not in heads          # bare pronoun dropped

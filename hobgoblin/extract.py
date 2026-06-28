@@ -284,6 +284,7 @@ def extract(
     unit_echelons: Optional[Iterable[str]] = None,
     normalize_case="auto",
     drop_stops: bool = True,
+    drop_generic: bool = False,
     model: str = DEFAULT_MODEL,
 ) -> list[dict]:
     """Extract entities and their context from ``text``.
@@ -380,6 +381,18 @@ def extract(
 
     if military:
         annotate_units(doc, entities, echelons=unit_echelons, text=src)
+
+    # Optional precision mode: drop bare generic common-noun entities ("the film",
+    # "actors") — keep anything anchored (elevation), a proper noun, a count, or a
+    # unit. Off by default so the high-recall, untyped-as-LLM-signal behavior stays.
+    if drop_generic:
+        def _is_generic(e):
+            if e.get("anchors_matched") or e.get("mil_unit") or e["context"]["count"]:
+                return False
+            if e.get("head_pos") != "NOUN":
+                return False
+            return not any(t["pos"] == "PROPN" for t in e["tokens"])
+        entities[:] = [e for e in entities if not _is_generic(e)]
 
     if normalized:
         _resurface(entities, src)

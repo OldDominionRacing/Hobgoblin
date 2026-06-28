@@ -98,7 +98,8 @@ def main():
             if len(text) < 200 or title in seen:
                 continue
             try:
-                ents = extract(text, anchors=ANCHORS)
+                ents = extract(text, anchors=ANCHORS,
+                               drop_generic=bool(os.environ.get("DROP_GENERIC")))
                 corr = wizard.fix(text, entities=ents, llm=JUDGE)["corrections"]
             except Exception as exc:  # noqa: BLE001
                 log(f"skip {title!r}: {exc!r}")

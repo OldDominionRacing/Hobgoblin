@@ -85,6 +85,14 @@ Bare stopword / pronoun entities ("It", "this", "the") are dropped (`drop_stops`
 default on) — they're never anchored on. Content and multi-word **untyped** entities
 are kept on purpose: they're useful raw signal for a later LLM pass.
 
+**Precision mode (`drop_generic`, default off).** A 50-page LLM-judged eval put the
+goblin at ~95% identification recall but only ~63% precision — it over-extracts
+generic common-noun phrases ("the film", "actors"). `drop_generic=True` drops
+common-noun entities that have no proper noun, no count, no unit, **and no anchor**
+(anchors still elevate — an anchored common noun like a `facility:["depot"]` survives).
+It's off by default so the high-recall, untyped-as-signal behavior is preserved; turn
+it on when you want precision over coverage.
+
 ### Part 2 — anchors
 
 A second function lets the user feed in **anchors** — the entities they care about.
