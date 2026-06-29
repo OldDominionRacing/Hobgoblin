@@ -10,74 +10,72 @@ typing-accuracy ~= 1-mistypes/typed.
 
 | title | ents | typed | drops | adds | mistypes | type_sugg |
 | --- | --- | --- | --- | --- | --- | --- |
-| Captain Corelli's Mandolin (film) | 20 | 10 | 7 | 1 | 2 | 4 |
-| Bruiser (TV series) | 27 | 13 | 14 | 1 | 2 | 0 |
-| Creamed eggs on toast | 69 | 8 | 32 | 4 | 6 | 1 |
-| 2020–21 Phoenix Suns season | 45 | 15 | 18 | 4 | 3 | 5 |
-| Birgit Bjørnvig | 22 | 11 | 11 | 1 | 3 | 2 |
-| 2013–14 ABA League | 14 | 11 | 2 | 1 | 1 | 1 |
-| Boulay-Moselle | 17 | 9 | 8 | 2 | 4 | 0 |
-| 2009 World Judo Juniors Championships | 6 | 5 | 1 | 0 | 1 | 0 |
-| Rod Harrington | 19 | 9 | 10 | 0 | 5 | 0 |
-| Christine Craft | 9 | 3 | 0 | 2 | 2 | 6 |
-| Betiscoides | 19 | 4 | 11 | 0 | 3 | 4 |
-| Nuit 1 | 13 | 5 | 1 | 0 | 2 | 3 |
-| Dealu Frumos | 20 | 13 | 3 | 0 | 6 | 0 |
-| Luis Aldunate | 18 | 10 | 5 | 0 | 4 | 2 |
-| Mansurabad, Seyyedan | 12 | 6 | 5 | 0 | 3 | 1 |
-| Lisa Iwamoto | 17 | 9 | 7 | 1 | 0 | 1 |
-| Wójcza | 10 | 5 | 3 | 1 | 2 | 3 |
-| Socialthing | 9 | 2 | 6 | 2 | 1 | 1 |
-| Charles Santley | 38 | 10 | 14 | 2 | 0 | 3 |
-| Almaz Capital | 48 | 31 | 22 | 3 | 8 | 3 |
-| Manfred Nowak | 38 | 26 | 6 | 0 | 4 | 3 |
-| Tony Bennett | 93 | 41 | 6 | 5 | 8 | 2 |
-| State University of Non-Ferrous Metals and Gold | 13 | 8 | 3 | 0 | 0 | 0 |
-| Kreischa | 13 | 6 | 7 | 0 | 1 | 1 |
-| John P. Woodall | 49 | 18 | 23 | 2 | 2 | 7 |
-| Bože pravde | 24 | 9 | 8 | 2 | 2 | 3 |
-| Jim Sinclair (footballer) | 15 | 7 | 6 | 0 | 4 | 2 |
-| Wild Women (1970 film) | 16 | 8 | 8 | 2 | 6 | 1 |
-| James Lisney | 46 | 26 | 27 | 4 | 6 | 2 |
-| Nahar Khan | 18 | 7 | 8 | 0 | 7 | 2 |
-| The Frog Prince (play) | 37 | 12 | 20 | 0 | 4 | 3 |
-| Désiré-François Le Filleul Des Guerrots | 18 | 8 | 15 | 3 | 3 | 0 |
-| Wilfred Broadhead | 28 | 13 | 12 | 1 | 5 | 1 |
-| The Broken Crown | 14 | 9 | 5 | 0 | 1 | 2 |
-| Tip-Off Girls | 14 | 11 | 1 | 0 | 3 | 2 |
-| Blackberry Belle | 54 | 24 | 3 | 3 | 7 | 1 |
-| Tina Shagufta Munir | 21 | 12 | 8 | 3 | 3 | 2 |
-| David Sagiv | 80 | 26 | 45 | 0 | 8 | 2 |
-| Freedom Party (Iceland) | 14 | 7 | 9 | 2 | 1 | 0 |
-| Järvsö | 43 | 22 | 21 | 1 | 10 | 1 |
-| Nantucket Cliff Range Lights | 17 | 6 | 10 | 1 | 2 | 0 |
-| Trevor Aston | 14 | 9 | 6 | 0 | 1 | 0 |
-| 2011 Poznań Porsche Open | 13 | 2 | 4 | 1 | 0 | 7 |
-| Gaylord Powless | 182 | 119 | 30 | 7 | 69 | 5 |
-| Richard Baker (Zen teacher) | 27 | 13 | 11 | 4 | 2 | 3 |
-| 1856 Hutt by-election | 19 | 10 | 7 | 3 | 5 | 3 |
-| Oleh Koverko | 11 | 7 | 4 | 2 | 1 | 2 |
-| Bilecik YHT railway station | 37 | 18 | 19 | 1 | 3 | 4 |
-| Krasnokamensk (urban locality) | 14 | 9 | 7 | 0 | 2 | 0 |
-| Kosmos 107 | 37 | 7 | 20 | 3 | 5 | 4 |
+| Ballymacward | 27 | 10 | 10 | 1 | 3 | 5 |
+| Carlton Complex Fire | 20 | 9 | 7 | 2 | 5 | 5 |
+| Bunkai | 13 | 2 | 9 | 0 | 1 | 3 |
+| Walloon church | 32 | 12 | 6 | 2 | 2 | 5 |
+| Vi vil leve | 15 | 7 | 7 | 1 | 1 | 1 |
+| Michael J. Flaherty | 24 | 12 | 12 | 2 | 4 | 0 |
+| Statues of the National Statuary Hall Collection | 62 | 18 | 9 | 2 | 5 | 0 |
+| Monstera tenuis | 31 | 8 | 24 | 1 | 2 | 2 |
+| Pilica River Skansen | 10 | 3 | 3 | 0 | 2 | 2 |
+| James P. Bassett | 8 | 4 | 2 | 3 | 1 | 2 |
+| Antonio Salieri | 91 | 29 | 57 | 0 | 3 | 6 |
+| A Stranger in Town (1943 film) | 15 | 8 | 7 | 1 | 7 | 1 |
+| Elachyophtalma cotanoides | 17 | 2 | 12 | 0 | 1 | 2 |
+| Ebba Forsberg | 53 | 20 | 29 | 1 | 4 | 4 |
+| Filip Kostić | 11 | 4 | 6 | 2 | 2 | 1 |
+| Zochonis | 14 | 5 | 3 | 0 | 2 | 4 |
+| Paslow Falls/Plant | 28 | 7 | 16 | 1 | 4 | 1 |
+| Nemopsis | 11 | 5 | 5 | 2 | 2 | 2 |
+| 2011 Atlantic hurricane season | 91 | 38 | 51 | 4 | 9 | 1 |
+| Vroni Thalmann-Bieri | 13 | 8 | 6 | 0 | 2 | 0 |
+| Glandular frog (disambiguation) | 18 | 4 | 4 | 2 | 1 | 8 |
+| Order of Prince Edward Island | 19 | 7 | 9 | 1 | 3 | 3 |
+| Donaldson, Minnesota | 11 | 6 | 5 | 2 | 3 | 0 |
+| 2025 President's Cup – Men's doubles | 13 | 5 | 6 | 0 | 1 | 1 |
+| Tripotamo, Arcadia | 19 | 10 | 8 | 1 | 4 | 1 |
+| Alexander Oblinger | 16 | 11 | 0 | 0 | 5 | 0 |
+| Mykhailo Holovko | 11 | 6 | 5 | 2 | 1 | 0 |
+| List of number-one R&B/hip-hop songs of 2017 (U.S.) | 8 | 0 | 5 | 2 | 0 | 3 |
+| Hayil | 23 | 7 | 14 | 0 | 4 | 1 |
+| Mitsubishi FBR Systems | 62 | 28 | 27 | 2 | 5 | 2 |
+| David Lilley | 17 | 12 | 3 | 0 | 2 | 2 |
+| Track & Signal | 17 | 8 | 8 | 3 | 0 | 1 |
+| Michiko Neya | 49 | 33 | 10 | 4 | 14 | 4 |
+| Zameer (2005 film) | 14 | 6 | 6 | 0 | 5 | 1 |
+| Malinovo, Lovech Province | 15 | 7 | 8 | 1 | 1 | 0 |
+| List of D.N.Angel chapters | 75 | 26 | 45 | 0 | 14 | 1 |
+| Viscount Longueville | 34 | 24 | 8 | 6 | 5 | 0 |
+| Sophia Ellis | 17 | 9 | 5 | 0 | 4 | 3 |
+| Simon Alcott | 15 | 6 | 7 | 3 | 2 | 2 |
+| UAAP Season 24 men's basketball tournament | 9 | 3 | 2 | 0 | 0 | 2 |
+| Kalsian Bhattian | 53 | 13 | 27 | 3 | 6 | 3 |
+| Coxs River track | 19 | 14 | 5 | 0 | 5 | 3 |
+| Cypress Lodge | 31 | 19 | 15 | 2 | 9 | 0 |
+| Sireniki | 25 | 14 | 7 | 0 | 7 | 1 |
+| 2011 World Championships in Athletics – Women's shot put | 49 | 18 | 26 | 5 | 6 | 4 |
+| Amanu | 25 | 6 | 16 | 1 | 5 | 1 |
+| Monsters Crash the Pajama Party | 27 | 3 | 3 | 0 | 2 | 0 |
+| Walter D'Arcy Ryan | 22 | 10 | 9 | 1 | 3 | 3 |
+| Lisa Smokstad | 4 | 3 | 2 | 1 | 1 | 0 |
+| Sean Bowen | 6 | 1 | 1 | 4 | 0 | 4 |
 
 ---
 
-## Totals — 50 pages, 1471 entities (LLM-judged by wizard.fix, expanded pack)
+## Totals — post fuzzy-fix (drop_generic off) (50 pages, 1309 entities, LLM-judged by wizard.fix)
 
 | metric | value |
 |---|---|
-| pages | 50 |
-| entities | 1471 · typed 689 (47%) |
-| drops (false positives) | 539 |
-| adds (missed entities) | 75 |
-| mistypes (wrong type on a typed entity) | 233 |
-| type_sugg (label for an untyped entity — coverage, not error) | 105 |
+| entities | 1309 (typed 530, 40%) |
+| drops (false positives) | 577 |
+| adds (missed) | 71 |
+| mistypes (wrong type on typed entity) | 180 |
+| type_sugg (label for untyped — coverage) | 101 |
+| **identification recall** | **95%** |
+| **identification precision** | **56%** |
+| **typing accuracy** | **66%** |
 
-### Error rates
-- **identification recall ≈ 95%** — the goblin rarely *misses* a real entity (the ~75 misses are mostly multi-word entities spaCy split apart).
-- **identification precision ≈ 63%** — it *over-extracts*: ~37% of returned entities are generic noun phrases ("the film", "actors", "the series"). Deterministically fixable (filter common-noun chunks).
-- **typing accuracy ≈ 66%** — of typed entities, ~34% are mislabeled, from two causes: inherited spaCy NER errors (Olivia Colman→organization) and Hobgoblin's own fuzzy false-positives (butter→military_unit). The former is the wizard's job; the latter is tightenable in match.py.
-
-Judged by  (Claude) via the Claude Code CLI under a Max subscription —
-an LLM proxy for ground truth, not gospel. Sample = 50 random Wikipedia pages.
+Each eval is a fresh random sample, so cross-run deltas include sampling noise.
+Typing accuracy is bottlenecked by spaCy NER mislabels (the wizard's job to fix);
+precision is gated by generic-noun over-extraction (see `drop_generic`).
