@@ -26,3 +26,4 @@ env/
 benchmark/run.log
 benchmark/quality.log
 benchmark/QUALITY_corrections.jsonl
+benchmark/ab.log
